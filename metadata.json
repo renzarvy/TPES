@@ -1,0 +1,8 @@
+{
+  "name": "Teachers Performance Evaluation System",
+  "description": "A web-based system to collect student evaluations, automate computation, and generate reports.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

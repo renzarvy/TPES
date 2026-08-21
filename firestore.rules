@@ -1,0 +1,182 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isSuperAdmin() {
+      return isAuthenticated() && (
+        request.auth.token.email in ['renzarvy.rv@gmail.com', 'admin@stalexiuscollege.edu.ph'] ||
+        request.auth.token.admin == true
+      );
+    }
+
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function isAdmin() {
+      return isSuperAdmin() || (
+        isAuthenticated() && 
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        getUserData().role == 'admin'
+      );
+    }
+
+    function isTeacher() {
+      return isAuthenticated() && (
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        getUserData().role == 'teacher'
+      );
+    }
+
+    function isVerifiedStudent() {
+      return isAuthenticated() && (
+        isAdmin() || (
+          exists(/databases/$(database)/documents/users/$(request.auth.uid)) && (
+            getUserData().verificationStatus == 'approved' ||
+            getUserData().verificationStatus == 'verified' ||
+            getUserData().isVerifiedStudent == true
+          )
+        )
+      );
+    }
+
+    // ===============================================================
+    // System Settings & Criteria
+    // ===============================================================
+    // Public read so login domain check and academic period settings work seamlessly.
+    // Writes are restricted exclusively to Administrators.
+    match /settings/{settingId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // ===============================================================
+    // Users & Teacher Profiles
+    // ===============================================================
+    // Admins have full access.
+    // Users can create/update and read their own user document.
+    // Any authenticated user can read teacher profiles.
+    match /users/{userId} {
+      allow read: if isAuthenticated() && (
+        isAdmin() ||
+        isOwner(userId) ||
+        resource.data.role == 'teacher'
+      );
+      allow create: if isAuthenticated() && (isAdmin() || isOwner(userId));
+      allow update: if isAuthenticated() && (isAdmin() || isOwner(userId));
+      allow delete: if isAdmin();
+    }
+
+    // ===============================================================
+    // Student ID Verifications
+    // ===============================================================
+    // Admins have full read/write access.
+    // Students can create and manage their own verification submissions.
+    match /verification_requests/{requestId} {
+      allow read: if isAuthenticated() && (
+        isAdmin() ||
+        resource.data.userId == request.auth.uid ||
+        requestId == request.auth.uid
+      );
+      allow create: if isAuthenticated() && (
+        isAdmin() ||
+        request.resource.data.userId == request.auth.uid ||
+        requestId == request.auth.uid
+      );
+      allow update: if isAuthenticated() && (
+        isAdmin() ||
+        (resource.data.userId == request.auth.uid && resource.data.status == 'pending') ||
+        (requestId == request.auth.uid && resource.data.status == 'pending')
+      );
+      allow delete: if isAdmin();
+    }
+
+    // ===============================================================
+    // Evaluations & Reports
+    // ===============================================================
+    // Admins have full read/write access.
+    // Students can read their own submissions and submit evaluations.
+    // Teachers can read evaluations submitted for their performance.
+    match /evaluations/{evaluationId} {
+      allow read: if isAuthenticated() && (
+        isAdmin() ||
+        resource.data.actualStudentId == request.auth.uid ||
+        resource.data.studentId == request.auth.uid ||
+        resource.data.teacherId == request.auth.uid ||
+        (isTeacher() && resource.data.teacherEmail == request.auth.token.email)
+      );
+      allow create: if isAuthenticated() && (
+        isAdmin() ||
+        request.resource.data.actualStudentId == request.auth.uid ||
+        request.resource.data.studentId == request.auth.uid ||
+        isVerifiedStudent()
+      );
+      allow update: if isAuthenticated() && (
+        isAdmin() ||
+        resource.data.actualStudentId == request.auth.uid ||
+        resource.data.studentId == request.auth.uid
+      );
+      allow delete: if isAdmin();
+    }
+
+    // ===============================================================
+    // Activity & Audit Logs
+    // ===============================================================
+    // Admins can read full audit history. Authenticated users can write log entries.
+    match /activity_logs/{logId} {
+      allow read: if isAdmin();
+      allow create: if isAuthenticated();
+      allow update, delete: if isAdmin();
+    }
+
+    match /audit_logs/{logId} {
+      allow read: if isAdmin();
+      allow create: if isAuthenticated();
+      allow update, delete: if isAdmin();
+    }
+
+    // ===============================================================
+    // Notifications & Report Dispatches
+    // ===============================================================
+    match /notifications/{notificationId} {
+      allow read: if isAuthenticated() && (
+        isAdmin() ||
+        resource.data.teacherId == request.auth.uid ||
+        resource.data.recipientEmail == request.auth.token.email
+      );
+      allow create: if isAdmin();
+      allow update: if isAuthenticated() && (
+        isAdmin() ||
+        resource.data.teacherId == request.auth.uid ||
+        resource.data.recipientEmail == request.auth.token.email
+      );
+      allow delete: if isAdmin();
+    }
+
+    // ===============================================================
+    // Faculty Self-Reflections
+    // ===============================================================
+    match /reflections/{reflectionId} {
+      allow read: if isAuthenticated() && (
+        isAdmin() ||
+        resource.data.teacherId == request.auth.uid
+      );
+      allow write: if isAuthenticated() && (
+        isAdmin() ||
+        (isTeacher() && request.resource.data.teacherId == request.auth.uid)
+      );
+    }
+  }
+}

@@ -1,0 +1,138 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User profile containing authentication, role, and verification details",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string", "format": "email" },
+        "name": { "type": "string" },
+        "role": { "type": "string", "enum": ["admin", "teacher", "student"] },
+        "verificationStatus": { "type": "string", "enum": ["pending", "approved", "rejected", "verified"] },
+        "isVerifiedStudent": { "type": "boolean" },
+        "department": { "type": "string" },
+        "college": { "type": "string" },
+        "studentId": { "type": "string" },
+        "employeeId": { "type": "string" },
+        "position": { "type": "string" },
+        "photoURL": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["email", "role"]
+    },
+    "VerificationRequest": {
+      "title": "VerificationRequest",
+      "description": "Student ID verification submissions for admin approval",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "studentId": { "type": "string" },
+        "name": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "department": { "type": "string" },
+        "college": { "type": "string" },
+        "idPhotoURL": { "type": "string" },
+        "idPhotoFront": { "type": "string" },
+        "idPhotoBack": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "approved", "rejected"] },
+        "submittedAt": { "type": "string" },
+        "reviewedAt": { "type": "string" },
+        "reviewedBy": { "type": "string" }
+      },
+      "required": ["userId", "email", "status"]
+    },
+    "Evaluation": {
+      "title": "Evaluation",
+      "description": "Student evaluation submitted for a teacher",
+      "type": "object",
+      "properties": {
+        "teacherId": { "type": "string" },
+        "teacherName": { "type": "string" },
+        "teacherEmail": { "type": "string", "format": "email" },
+        "actualStudentId": { "type": "string" },
+        "department": { "type": "string" },
+        "academicYear": { "type": "string" },
+        "semester": { "type": "string" },
+        "answers": { "type": "object" },
+        "computedScore": { "type": "number" },
+        "sentimentScore": { "type": "number" },
+        "comments": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["teacherId", "actualStudentId", "computedScore"]
+    },
+    "Setting": {
+      "title": "Setting",
+      "description": "System-wide configuration, departments, and evaluation criteria",
+      "type": "object",
+      "properties": {
+        "academicYear": { "type": "string" },
+        "semester": { "type": "string" },
+        "items": { "type": "array" }
+      }
+    },
+    "ActivityLog": {
+      "title": "ActivityLog",
+      "description": "Audit trail of admin and user actions in the system",
+      "type": "object",
+      "properties": {
+        "action": { "type": "string" },
+        "entity": { "type": "string" },
+        "details": { "type": "string" },
+        "performedBy": { "type": "string" },
+        "performedByEmail": { "type": "string" },
+        "targetId": { "type": "string" },
+        "targetName": { "type": "string" },
+        "timestamp": { "type": "string" }
+      },
+      "required": ["action", "entity", "performedBy"]
+    },
+    "Notification": {
+      "title": "Notification",
+      "description": "System notifications sent to teachers or admins",
+      "type": "object",
+      "properties": {
+        "teacherId": { "type": "string" },
+        "teacherName": { "type": "string" },
+        "recipientEmail": { "type": "string" },
+        "subject": { "type": "string" },
+        "bodyText": { "type": "string" },
+        "status": { "type": "string" },
+        "readByTeacher": { "type": "boolean" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["recipientEmail", "subject"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "Stores user profiles, roles, and faculty records"
+    },
+    "/verification_requests/{requestId}": {
+      "schema": "VerificationRequest",
+      "description": "Stores student ID verification requests"
+    },
+    "/evaluations/{evaluationId}": {
+      "schema": "Evaluation",
+      "description": "Stores student evaluations of faculty"
+    },
+    "/settings/{settingId}": {
+      "schema": "Setting",
+      "description": "Stores academic period, criteria, and department settings"
+    },
+    "/activity_logs/{logId}": {
+      "schema": "ActivityLog",
+      "description": "Stores audit and activity logs"
+    },
+    "/audit_logs/{logId}": {
+      "schema": "ActivityLog",
+      "description": "Stores administrative audit records"
+    },
+    "/notifications/{notificationId}": {
+      "schema": "Notification",
+      "description": "Stores faculty evaluation reports and alerts"
+    }
+  }
+}
