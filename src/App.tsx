@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { useRoleAuth } from './hooks/useRoleAuth';
 import { Layout } from './components/Layout';
 import { HomePage } from './pages/HomePage';
 import { Login } from './pages/Login';
@@ -15,13 +16,14 @@ import { Settings } from './pages/admin/Settings';
 import { AuditLogs } from './pages/admin/AuditLogs';
 import { VerifiedRoute } from './components/VerifiedRoute';
 import { RoleGuard } from './components/RoleGuard';
+import { AccessDenied } from './components/AccessDenied';
 import { StatusNotice } from './pages/student/StatusNotice';
 import { StudentRegistrationPortal } from './components/student/StudentRegistrationPortal';
 import { StudentVerificationManager } from './components/admin/StudentVerificationManager';
 
 // Router for dashboard content based on authenticated role
 export const DashboardRoleRouter = () => {
-  const { user, role, loading } = useAuth();
+  const { user, role, loading, isSuperAdmin } = useRoleAuth();
 
   if (loading) {
     return (
@@ -34,21 +36,34 @@ export const DashboardRoleRouter = () => {
     );
   }
 
-  const userEmail = (user?.email || '').toLowerCase().trim();
-  const isSuperAdmin = userEmail === 'renzarvy.rv@gmail.com' || userEmail === 'admin@stalexiuscollege.edu.ph';
+  // Not signed in -> Send to login
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
 
+  // Admin and Super Admin
   if (isSuperAdmin || role === 'admin') {
     return <AdminDashboard />;
   }
 
-  switch (role) {
-    case 'teacher':
-      return <TeacherDashboard />;
-    case 'student':
-      return <StudentDashboard />;
-    default:
-      return <StudentDashboard />;
+  // Faculty / Teacher
+  if (role === 'teacher') {
+    return <TeacherDashboard />;
   }
+
+  // Student
+  if (role === 'student') {
+    return <StudentDashboard />;
+  }
+
+  // Unauthorized or unassigned role -> Dedicated Access Denied state (no fallback to StudentDashboard)
+  return (
+    <AccessDenied 
+      customTitle="Unassigned Account Role"
+      customMessage="Your account has been authenticated, but has not yet been assigned a valid student, teacher, or administrative role in the system."
+      allowedRoles={['student', 'teacher', 'admin']}
+    />
+  );
 };
 
 // Root index entry component: Shows Homepage if not logged in, or Dashboard in Layout if logged in
@@ -85,6 +100,7 @@ function App() {
           <Route path="/" element={<MainEntryRouter />} />
           <Route path="/home" element={<HomePage />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/access-denied" element={<AccessDenied />} />
           
           <Route element={<Layout />}>
             <Route path="dashboard" element={<DashboardRoleRouter />} />

@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth, UserRole } from '../contexts/AuthContext';
-import { ShieldAlert, ArrowLeft, Lock, RefreshCw, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { useRoleAuth } from '../hooks/useRoleAuth';
+import { AccessDenied } from './AccessDenied';
+import { ShieldAlert, RefreshCw } from 'lucide-react';
 
 interface RoleGuardProps {
   allowedRoles: UserRole[];
@@ -16,7 +18,8 @@ export const RoleGuard: React.FC<RoleGuardProps> = ({
   fallbackPath,
   children
 }) => {
-  const { user, role, loading, isVerified, validateUserRole, userProfile } = useAuth();
+  const { user, role, loading, isVerified, validateUserRole } = useAuth();
+  const { isSuperAdmin, canAccess } = useRoleAuth({ allowedRoles });
   const location = useLocation();
   const navigate = useNavigate();
   
@@ -79,7 +82,7 @@ export const RoleGuard: React.FC<RoleGuardProps> = ({
           Verifying Security Clearance...
         </h3>
         <p className="text-xs text-slate-500 mt-1 max-w-sm">
-          Confirming account authentication and database permissions for this administrative module.
+          Confirming account authentication and database permissions for this module.
         </p>
       </div>
     );
@@ -90,12 +93,9 @@ export const RoleGuard: React.FC<RoleGuardProps> = ({
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  const userEmail = (user.email || '').toLowerCase().trim();
-  const isSuperAdmin = userEmail === 'renzarvy.rv@gmail.com' || userEmail === 'admin@stalexiuscollege.edu.ph';
-  
   // Effective role to test against allowedRoles
   const effectiveRole = isSuperAdmin ? 'admin' : (dbRole || role);
-  const isAllowed = isSuperAdmin || (effectiveRole && allowedRoles.includes(effectiveRole));
+  const isAllowed = isSuperAdmin || canAccess(allowedRoles) || (effectiveRole && allowedRoles.includes(effectiveRole));
 
   // 3. Document Role Mismatch Security Breach Protection
   if (isRoleAuthentic === false && !isSuperAdmin) {
@@ -139,63 +139,13 @@ export const RoleGuard: React.FC<RoleGuardProps> = ({
     );
   }
 
-  // 4. Unauthorized Role Access -> Render Institutional Access Denied Page
+  // 4. Unauthorized Role Access -> Render Institutional Access Denied Component
   if (!isAllowed) {
     if (fallbackPath) {
       return <Navigate to={fallbackPath} replace />;
     }
 
-    return (
-      <div className="max-w-xl mx-auto my-12 p-8 bg-white border border-slate-200 rounded-2xl shadow-xl text-center">
-        <div className="w-16 h-16 bg-amber-50 border border-amber-200 rounded-2xl flex items-center justify-center mx-auto mb-5 text-[#c59b27]">
-          <Lock className="w-8 h-8 text-[#c59b27]" />
-        </div>
-
-        <span className="text-[11px] font-extrabold tracking-[0.2em] uppercase text-[#c59b27] bg-[#c59b27]/10 px-3 py-1 rounded-full border border-[#c59b27]/20">
-          RESTRICTED ACCESS
-        </span>
-
-        <h2 className="text-xl font-serif-display font-bold text-slate-900 mt-4 mb-2">
-          Administrator Clearance Required
-        </h2>
-
-        <p className="text-xs text-slate-600 leading-relaxed mb-6">
-          You are currently signed in as a <span className="font-semibold text-blue-900 uppercase">[{role || 'Student'}]</span> account. 
-          This route requires elevated <span className="font-semibold text-slate-900">[{allowedRoles.join(' / ').toUpperCase()}]</span> permissions.
-        </p>
-
-        <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 text-left text-xs space-y-2 mb-6">
-          <div className="flex justify-between items-center text-slate-500 border-b border-slate-200 pb-2">
-            <span>Requested Resource:</span>
-            <code className="text-slate-800 font-mono font-medium">{location.pathname}</code>
-          </div>
-          <div className="flex justify-between items-center text-slate-500 border-b border-slate-200 pb-2">
-            <span>Authenticated User:</span>
-            <span className="text-slate-800 font-medium">{user.email}</span>
-          </div>
-          <div className="flex justify-between items-center text-slate-500">
-            <span>Required Role(s):</span>
-            <span className="text-amber-700 font-bold">{allowedRoles.join(', ')}</span>
-          </div>
-        </div>
-
-        <div className="flex flex-col sm:flex-row justify-center gap-3">
-          <button
-            onClick={() => navigate(-1)}
-            className="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-all flex items-center justify-center space-x-1.5"
-          >
-            <ArrowLeft className="w-3.5 h-3.5" />
-            <span>Go Back</span>
-          </button>
-          <button
-            onClick={() => navigate('/')}
-            className="px-5 py-2.5 bg-[#0c1a36] hover:bg-[#162a56] text-white rounded-xl text-xs font-bold transition-all"
-          >
-            Return to Main Portal
-          </button>
-        </div>
-      </div>
-    );
+    return <AccessDenied allowedRoles={allowedRoles} />;
   }
 
   // 5. Verification Check (if requireVerification is specified)

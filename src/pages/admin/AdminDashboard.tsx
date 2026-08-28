@@ -8,6 +8,7 @@ import { useNavigate } from 'react-router-dom';
 import { StudentVerificationManager } from '../../components/admin/StudentVerificationManager';
 import { QuickStats } from '../../components/admin/QuickStats';
 import { ActivityLog } from '../../components/ActivityLog';
+import { DashboardSkeleton } from '../../components/DashboardSkeleton';
 
 export const AdminDashboard: React.FC = () => {
   const navigate = useNavigate();
@@ -241,7 +242,9 @@ export const AdminDashboard: React.FC = () => {
     }
   };
 
-  if (loading) return <div className="p-8 text-gray-500 font-medium">Loading dashboard overview...</div>;
+  if (loading) {
+    return <DashboardSkeleton cardCount={4} tableRows={5} />;
+  }
 
   return (
     <div className="space-y-6">
