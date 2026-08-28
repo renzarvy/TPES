@@ -1,5 +1,15 @@
 {
   "projects": {
     "default": "teachers-performance"
-  }
+  },
+  "targets": {
+    "teachers-performance": {
+      "hosting": {
+        "eval-stalexiuscollege": [
+          "eval-stalexiuscollege"
+        ]
+      }
+    }
+  },
+  "etags": {}
 }
