@@ -232,3 +232,5 @@ export const TeacherProfile: React.FC = () => {
     </div>
   );
 };
+
+export default TeacherProfile;

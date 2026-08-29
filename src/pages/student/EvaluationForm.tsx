@@ -666,3 +666,5 @@ export const EvaluationForm: React.FC = () => {
   );
 };
 
+export default EvaluationForm;
+

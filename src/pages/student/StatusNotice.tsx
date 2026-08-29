@@ -98,3 +98,5 @@ export const StatusNotice: React.FC = () => {
     </div>
   );
 };
+
+export default StatusNotice;

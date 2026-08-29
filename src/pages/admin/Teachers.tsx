@@ -672,3 +672,5 @@ export const Teachers: React.FC = () => {
     </div>
   );
 };
+
+export default Teachers;
