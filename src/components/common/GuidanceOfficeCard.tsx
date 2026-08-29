@@ -123,7 +123,7 @@ export const GuidanceOfficeCard: React.FC<GuidanceOfficeCardProps> = ({
             </div>
           </div>
 
-          {/* Column 2: Contact Numbers & Email */}
+          {/* Column 2: Contact Channels & Email */}
           <div className="bg-white p-4 rounded-xl border border-blue-100 shadow-xs space-y-2.5 pt-4 sm:pt-4">
             <div className="flex items-center space-x-2 text-[#1e3a8a] font-bold text-xs uppercase tracking-wide">
               <Phone className="w-4 h-4 text-blue-700" />
@@ -139,7 +139,7 @@ export const GuidanceOfficeCard: React.FC<GuidanceOfficeCardProps> = ({
                   </span>
                   <button
                     type="button"
-                    onClick={() => handleCopy('guidance@stalexiuscollege.edu.ph', 'email')}
+                    onClick={() => handleCopy('admin@stalexiuscollege.edu.ph', 'email')}
                     className="text-[10px] text-blue-700 hover:text-blue-900 flex items-center font-bold"
                   >
                     {copiedText === 'email' ? (
@@ -150,63 +150,47 @@ export const GuidanceOfficeCard: React.FC<GuidanceOfficeCardProps> = ({
                   </button>
                 </div>
                 <a 
-                  href="mailto:guidance@stalexiuscollege.edu.ph"
-                  className="font-bold text-[#1e3a8a] hover:underline block mt-0.5 break-all"
+                  href="mailto:admin@stalexiuscollege.edu.ph"
+                  className="font-bold text-[#1e3a8a] hover:underline block mt-0.5 break-all text-xs"
                 >
-                  guidance@stalexiuscollege.edu.ph
+                  admin@stalexiuscollege.edu.ph
                 </a>
               </div>
 
-              {/* Mobile Hotline 1 */}
-              <div className="p-2.5 bg-gray-50 rounded-lg border border-gray-200">
-                <div className="text-[11px] text-gray-500 font-semibold flex items-center justify-between">
-                  <span className="flex items-center">
-                    <Phone className="w-3 h-3 mr-1 text-emerald-600" /> Mobile Hotline 1
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => handleCopy('09537290084', 'phone1')}
-                    className="text-[10px] text-blue-700 hover:text-blue-900 flex items-center font-bold"
-                  >
-                    {copiedText === 'phone1' ? (
-                      <span className="text-emerald-600 flex items-center"><Check className="w-3 h-3 mr-0.5" /> Copied</span>
-                    ) : (
-                      <span className="flex items-center"><Copy className="w-3 h-3 mr-0.5" /> Copy</span>
-                    )}
-                  </button>
+              {/* Landline */}
+              <div className="p-2 bg-gray-50 rounded-lg border border-gray-200 flex items-center justify-between">
+                <div>
+                  <span className="text-[10px] text-gray-500 font-semibold block">Landline</span>
+                  <a href="tel:0832282019" className="font-bold font-mono text-gray-900 hover:text-blue-700 text-xs">
+                    (083) 228 2019
+                  </a>
                 </div>
-                <a 
-                  href="tel:09537290084"
-                  className="font-bold font-mono text-gray-900 hover:text-blue-700 text-sm mt-0.5 block"
+                <button
+                  type="button"
+                  onClick={() => handleCopy('(083) 228 2019', 'landline')}
+                  className="text-[10px] text-blue-700 hover:text-blue-900 font-bold"
                 >
-                  0953 729 0084
-                </a>
+                  {copiedText === 'landline' ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3" />}
+                </button>
               </div>
 
-              {/* Mobile Hotline 2 */}
-              <div className="p-2.5 bg-gray-50 rounded-lg border border-gray-200">
-                <div className="text-[11px] text-gray-500 font-semibold flex items-center justify-between">
-                  <span className="flex items-center">
-                    <Phone className="w-3 h-3 mr-1 text-emerald-600" /> Mobile Hotline 2
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => handleCopy('09209748651', 'phone2')}
-                    className="text-[10px] text-blue-700 hover:text-blue-900 flex items-center font-bold"
-                  >
-                    {copiedText === 'phone2' ? (
-                      <span className="text-emerald-600 flex items-center"><Check className="w-3 h-3 mr-0.5" /> Copied</span>
-                    ) : (
-                      <span className="flex items-center"><Copy className="w-3 h-3 mr-0.5" /> Copy</span>
-                    )}
-                  </button>
+              {/* Mobile Hotline */}
+              <div className="p-2 bg-gray-50 rounded-lg border border-gray-200 flex items-center justify-between">
+                <div>
+                  <span className="text-[10px] text-gray-500 font-semibold block">Mobile Hotlines</span>
+                  <div className="font-mono font-bold text-gray-900 text-xs space-x-1.5">
+                    <a href="tel:09209748650" className="hover:text-blue-700">0920 974 8650</a>
+                    <span className="text-gray-300">/</span>
+                    <a href="tel:09088127461" className="hover:text-blue-700">0908 812 7461</a>
+                  </div>
                 </div>
-                <a 
-                  href="tel:09209748651"
-                  className="font-bold font-mono text-gray-900 hover:text-blue-700 text-sm mt-0.5 block"
+                <button
+                  type="button"
+                  onClick={() => handleCopy('0920 974 8650 / 0908 812 7461', 'mobile')}
+                  className="text-[10px] text-blue-700 hover:text-blue-900 font-bold"
                 >
-                  0920 974 8651
-                </a>
+                  {copiedText === 'mobile' ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3" />}
+                </button>
               </div>
             </div>
           </div>
@@ -216,15 +200,15 @@ export const GuidanceOfficeCard: React.FC<GuidanceOfficeCardProps> = ({
             <div>
               <div className="flex items-center space-x-2 text-[#1e3a8a] font-bold text-xs uppercase tracking-wide">
                 <MapPin className="w-4 h-4 text-rose-600" />
-                <span>Office Location</span>
+                <span>Institutional Address</span>
               </div>
 
               <div className="mt-2 bg-rose-50/60 p-3 rounded-lg border border-rose-100">
                 <p className="text-xs font-bold text-gray-900 leading-relaxed">
-                  Left Side of the SAC Gymnasium Stage, St. Alexius College
+                  Gensan Drive, Brgy. Zone IV, City of Koronadal, 9506, South Cotabato, Philippines
                 </p>
                 <p className="text-[11px] text-gray-600 mt-1">
-                  City of Koronadal, South Cotabato
+                  St. Alexius College, Inc. Campus
                 </p>
               </div>
 

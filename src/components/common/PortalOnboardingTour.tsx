@@ -153,7 +153,7 @@ export const PortalOnboardingTour: React.FC<PortalOnboardingTourProps> = ({
             <span>🏢 The Guidance Office</span>
           </div>
           <p className="text-xs text-gray-600 leading-relaxed">
-            Need help with your evaluations or student welfare? Check office hours, phone hotlines, and campus location right here.
+            Need help with your evaluations or student welfare? Check office hours, contact email, and campus location right here.
           </p>
         </div>
       ),

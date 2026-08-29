@@ -2,20 +2,20 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { 
-  ArrowRight, LogIn, Shield, Award, BookOpen, Users, CheckCircle2, 
-  Sparkles, HeartHandshake, Scale, Feather, Compass, Star, ChevronRight,
-  ExternalLink, Layers, GraduationCap, Building2, HelpCircle, X, Lock,
-  History, Calendar, FileSpreadsheet, Cpu, Activity, Clock, BarChart3,
-  TrendingUp, Check, Info, ArrowUpRight, Network
+  ArrowRight, LogIn, Award, HeartHandshake, Scale, Feather, 
+  Compass, CheckCircle2, GraduationCap, Building2, Phone, Mail, 
+  MapPin, Clock, Copy, Check, Eye, Target, Sparkles, BookOpen, 
+  Layers, ExternalLink, ShieldCheck, HelpCircle
 } from 'lucide-react';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 
 export const HomePage: React.FC = () => {
   const navigate = useNavigate();
-  const { user, role, logOut } = useAuth();
+  const { user, role } = useAuth();
   
-  const [activeTab, setActiveTab] = useState<'home' | 'values' | 'framework' | 'pieces'>('home');
+  const [activeTab, setActiveTab] = useState<'home' | 'vision-mission' | 'values'>('home');
+  const [copiedKey, setCopiedKey] = useState<string | null>(null);
 
   const [academicPeriod, setAcademicPeriod] = useState({
     year: '2025-2026',
@@ -49,6 +49,12 @@ export const HomePage: React.FC = () => {
     }
   };
 
+  const handleCopy = (text: string, key: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedKey(key);
+    setTimeout(() => setCopiedKey(null), 2500);
+  };
+
   const handleStartEvaluation = () => {
     if (user) {
       if (role === 'student' || role === 'teacher' || role === 'admin') {
@@ -62,7 +68,7 @@ export const HomePage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col font-sans selection:bg-[#c59b27] selection:text-slate-900">
+    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-[#c59b27] selection:text-slate-900">
       
       {/* 1. Top Ribbon */}
       <header className="bg-[#0c1a36] text-white py-2 px-4 sm:px-8 border-b border-blue-900/40 text-[11px] sm:text-xs z-50">
@@ -79,11 +85,12 @@ export const HomePage: React.FC = () => {
 
       {/* 2. Main Navigation Bar */}
       <nav className="bg-white text-slate-900 sticky top-0 z-40 shadow-md border-b border-slate-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-8 py-3.5 sm:py-4 flex justify-between items-center">
+        <div className="max-w-7xl mx-auto px-4 sm:px-8 py-3 sm:py-3.5 flex justify-between items-center">
           
           {/* Brand Logo & Name */}
           <div 
             onClick={() => {
+              setActiveTab('home');
               window.scrollTo({ top: 0, behavior: 'smooth' });
             }} 
             className="flex items-center space-x-3 sm:space-x-4 cursor-pointer group"
@@ -100,10 +107,10 @@ export const HomePage: React.FC = () => {
               />
             </div>
             <div>
-              <h1 className="text-xl sm:text-2xl lg:text-[26px] font-serif-display font-bold text-[#162a56] leading-tight tracking-tight">
+              <h1 className="text-xl sm:text-2xl lg:text-[24px] font-serif-display font-bold text-[#162a56] leading-tight tracking-tight">
                 St. Alexius College
               </h1>
-              <p className="text-[9px] sm:text-[10.5px] tracking-[0.22em] font-semibold text-slate-500 uppercase mt-0.5">
+              <p className="text-[9px] sm:text-[10px] tracking-[0.22em] font-semibold text-slate-500 uppercase mt-0.5">
                 FACULTY PERFORMANCE EVALUATION SYSTEM
               </p>
             </div>
@@ -127,6 +134,19 @@ export const HomePage: React.FC = () => {
 
               <button 
                 onClick={() => {
+                  setActiveTab('vision-mission');
+                  scrollToSection('vision-mission');
+                }}
+                className={`relative py-1 transition-colors hover:text-[#162a56] ${activeTab === 'vision-mission' ? 'text-[#162a56] font-semibold' : 'text-slate-600'}`}
+              >
+                Mission & Vision
+                {activeTab === 'vision-mission' && (
+                  <span className="absolute bottom-0 left-0 w-full h-[3px] bg-[#c59b27] rounded-full" />
+                )}
+              </button>
+
+              <button 
+                onClick={() => {
                   setActiveTab('values');
                   scrollToSection('core-values');
                 }}
@@ -134,32 +154,6 @@ export const HomePage: React.FC = () => {
               >
                 Core Values
                 {activeTab === 'values' && (
-                  <span className="absolute bottom-0 left-0 w-full h-[3px] bg-[#c59b27] rounded-full" />
-                )}
-              </button>
-
-              <button 
-                onClick={() => {
-                  setActiveTab('framework');
-                  scrollToSection('framework');
-                }}
-                className={`relative py-1 transition-colors hover:text-[#162a56] ${activeTab === 'framework' ? 'text-[#162a56] font-semibold' : 'text-slate-600'}`}
-              >
-                Framework
-                {activeTab === 'framework' && (
-                  <span className="absolute bottom-0 left-0 w-full h-[3px] bg-[#c59b27] rounded-full" />
-                )}
-              </button>
-
-              <button 
-                onClick={() => {
-                  setActiveTab('pieces');
-                  scrollToSection('pieces-section');
-                }}
-                className={`relative py-1 transition-colors hover:text-[#162a56] ${activeTab === 'pieces' ? 'text-[#162a56] font-semibold' : 'text-slate-600'}`}
-              >
-                PIECES Model
-                {activeTab === 'pieces' && (
                   <span className="absolute bottom-0 left-0 w-full h-[3px] bg-[#c59b27] rounded-full" />
                 )}
               </button>
@@ -189,20 +183,19 @@ export const HomePage: React.FC = () => {
         </div>
       </nav>
 
-      {/* 3. Hero Section */}
-      <section className="relative bg-[#162c5b] text-white overflow-hidden py-16 sm:py-20 lg:py-24 border-b border-blue-900/50">
+      {/* 3. Hero Section with Authentic Background & Seal */}
+      <section className="relative bg-[#0d1c3a] text-white overflow-hidden py-16 sm:py-20 lg:py-24 border-b border-blue-900/50">
         
-        {/* Subtle College Seal Watermark & Gradient Overlay */}
+        {/* Background Image Texture */}
         <div 
-          className="absolute inset-0 bg-no-repeat bg-right opacity-20 pointer-events-none transition-opacity"
-          style={{ 
-            backgroundImage: `radial-gradient(circle at 75% 50%, rgba(22, 44, 91, 0.4), rgba(15, 23, 42, 0.95)), url('/logo.png')`,
-            backgroundSize: 'contain',
-            backgroundPosition: 'right center'
-          }}
+          className="absolute inset-0 bg-cover bg-center opacity-15 pointer-events-none mix-blend-luminosity"
+          style={{ backgroundImage: `url('/background.webp')` }}
         />
 
-        {/* Ambient Glow */}
+        {/* Ambient Radial Gradient Overlay */}
+        <div className="absolute inset-0 bg-gradient-to-r from-[#0c1a36] via-[#10244c]/95 to-[#0b1730]/90 pointer-events-none" />
+
+        {/* Ambient Glows */}
         <div className="absolute top-1/4 right-1/4 w-96 h-96 bg-blue-400/10 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute bottom-10 left-10 w-80 h-80 bg-[#c59b27]/10 rounded-full blur-3xl pointer-events-none" />
 
@@ -221,7 +214,7 @@ export const HomePage: React.FC = () => {
               </div>
 
               {/* Main Headline */}
-              <h1 className="text-4xl sm:text-5xl lg:text-[56px] xl:text-[62px] font-serif-display font-normal text-white leading-[1.14] tracking-tight mb-6 sm:mb-8">
+              <h1 className="text-4xl sm:text-5xl lg:text-[54px] xl:text-[60px] font-serif-display font-normal text-white leading-[1.15] tracking-tight mb-6 sm:mb-8">
                 Teaching measured by<br />
                 <span className="relative inline-block pb-1">
                   the values
@@ -233,8 +226,8 @@ export const HomePage: React.FC = () => {
               {/* Description Paragraph */}
               <p className="text-slate-200/95 text-sm sm:text-base lg:text-[16.5px] leading-relaxed max-w-2xl font-light mb-4 sm:mb-6">
                 Developed for the Guidance Office and Academic Affairs of St. Alexius College, Inc., 
-                the Teachers Performance Evaluation System (TPES) replaces semi-manual Google Forms with 
-                an automated, confidential, and mathematically validated evaluation workflow.
+                the Teachers Performance Evaluation System (TPES) provides an automated, confidential, 
+                and values-centered framework for continuous academic growth and instructional excellence.
               </p>
 
               {/* Tagline */}
@@ -246,26 +239,26 @@ export const HomePage: React.FC = () => {
               <div className="flex flex-wrap items-center gap-4 w-full sm:w-auto">
                 <button
                   onClick={handleStartEvaluation}
-                  className="w-full sm:w-auto bg-[#c59b27] hover:bg-[#b0881e] text-[#0d1c3a] font-bold text-xs sm:text-sm tracking-wider uppercase px-7 py-3.5 rounded shadow-lg flex items-center justify-center space-x-2.5 transition-all transform hover:-translate-y-0.5 active:scale-95"
+                  className="w-full sm:w-auto bg-[#c59b27] hover:bg-[#b0881e] text-[#0d1c3a] font-bold text-xs sm:text-sm tracking-wider uppercase px-7 py-3.5 rounded shadow-lg flex items-center justify-center space-x-2.5 transition-all transform hover:-translate-y-0.5 active:scale-95 cursor-pointer"
                 >
                   <span>START AN EVALUATION</span>
                   <ArrowRight className="w-4 h-4 stroke-[2.5]" />
                 </button>
 
                 <button
-                  onClick={() => scrollToSection('core-values')}
-                  className="w-full sm:w-auto border border-white/40 hover:border-white hover:bg-white/10 text-white font-semibold text-xs sm:text-sm tracking-wider uppercase px-6 py-3.5 rounded transition-all flex items-center justify-center space-x-2"
+                  onClick={() => scrollToSection('vision-mission')}
+                  className="w-full sm:w-auto border border-white/40 hover:border-white hover:bg-white/10 text-white font-semibold text-xs sm:text-sm tracking-wider uppercase px-6 py-3.5 rounded transition-all flex items-center justify-center space-x-2 cursor-pointer"
                 >
-                  <Award className="w-4 h-4 text-[#c59b27]" />
-                  <span>CORE VALUES</span>
+                  <Eye className="w-4 h-4 text-[#c59b27]" />
+                  <span>MISSION & VISION</span>
                 </button>
 
                 <button
-                  onClick={() => scrollToSection('framework')}
-                  className="w-full sm:w-auto bg-blue-900/60 hover:bg-blue-900 text-blue-200 font-semibold text-xs sm:text-sm tracking-wider uppercase px-6 py-3.5 rounded transition-all flex items-center justify-center space-x-2 border border-blue-700/50"
+                  onClick={() => scrollToSection('core-values')}
+                  className="w-full sm:w-auto bg-blue-900/60 hover:bg-blue-900 text-blue-200 font-semibold text-xs sm:text-sm tracking-wider uppercase px-6 py-3.5 rounded transition-all flex items-center justify-center space-x-2 border border-blue-700/50 cursor-pointer"
                 >
-                  <Layers className="w-4 h-4" />
-                  <span>VIEW FRAMEWORK</span>
+                  <HeartHandshake className="w-4 h-4 text-[#c59b27]" />
+                  <span>CORE VALUES</span>
                 </button>
               </div>
 
@@ -291,8 +284,8 @@ export const HomePage: React.FC = () => {
                 <div className="absolute -inset-4 bg-gradient-to-tr from-[#c59b27]/30 to-blue-400/20 rounded-full blur-2xl group-hover:blur-3xl transition-all duration-700 pointer-events-none" />
                 
                 {/* Circular Seal Container */}
-                <div className="relative w-64 h-64 sm:w-80 sm:h-80 lg:w-96 lg:h-96 rounded-full p-2 bg-gradient-to-b from-white/15 to-white/5 backdrop-blur-sm border-2 border-white/20 shadow-2xl flex items-center justify-center transition-transform duration-500 hover:scale-[1.02]">
-                  <div className="w-full h-full rounded-full bg-slate-900/60 p-4 flex items-center justify-center overflow-hidden border border-white/10">
+                <div className="relative w-64 h-64 sm:w-80 sm:h-80 lg:w-92 lg:h-92 rounded-full p-2 bg-gradient-to-b from-white/15 to-white/5 backdrop-blur-sm border-2 border-white/20 shadow-2xl flex items-center justify-center transition-transform duration-500 hover:scale-[1.02]">
+                  <div className="w-full h-full rounded-full bg-slate-900/80 p-4 flex items-center justify-center overflow-hidden border border-white/10">
                     <img 
                       src="/logo.png" 
                       alt="St. Alexius College Official Emblem" 
@@ -316,7 +309,103 @@ export const HomePage: React.FC = () => {
         </div>
       </section>
 
-      {/* Core Values Section */}
+      {/* 4. St. Alexius College Mission & Vision Section */}
+      <section id="vision-mission" className="py-20 bg-gradient-to-b from-[#091326] via-[#0d1c3a] to-[#0a1428] text-white relative border-b border-blue-950">
+        <div className="max-w-7xl mx-auto px-4 sm:px-8">
+          
+          <div className="text-center max-w-3xl mx-auto mb-16">
+            <span className="text-[#c59b27] text-xs font-bold tracking-[0.25em] uppercase inline-block mb-3">
+              INSTITUTIONAL PHILOSOPHY
+            </span>
+            <h2 className="text-3xl sm:text-4xl font-serif-display font-bold text-white mb-4">
+              Vision, Mission & Goals
+            </h2>
+            <p className="text-slate-300 text-sm sm:text-base leading-relaxed">
+              Rooted in Christian values, St. Alexius College strives for academic excellence, holistic education, 
+              and professional competence in the service of God and humanity.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
+            
+            {/* Vision Card */}
+            <div className="relative bg-gradient-to-br from-blue-950/80 via-slate-900/90 to-[#0c1a36] border-2 border-amber-400/40 rounded-2xl p-8 sm:p-10 shadow-2xl flex flex-col justify-between group hover:border-[#c59b27] transition-all duration-300">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-[#c59b27]/10 rounded-full blur-2xl pointer-events-none" />
+              <div>
+                <div className="flex items-center space-x-3 mb-6">
+                  <div className="w-12 h-12 rounded-xl bg-[#c59b27]/15 border border-[#c59b27]/40 text-[#c59b27] flex items-center justify-center shadow-inner">
+                    <Eye className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <span className="text-[11px] font-bold text-[#e5ca7c] uppercase tracking-widest">Our Future</span>
+                    <h3 className="text-2xl font-serif-display font-bold text-white">Institutional Vision</h3>
+                  </div>
+                </div>
+                
+                <blockquote className="text-slate-200 text-base sm:text-lg leading-relaxed font-light italic border-l-4 border-[#c59b27] pl-5 my-4">
+                  &ldquo;St. Alexius College envisions to be a premier higher education institution in Southern Mindanao recognized for producing globally competent, morally upright, and compassionate professionals committed to transformative community service, sustainable development, and life-long learning.&rdquo;
+                </blockquote>
+              </div>
+
+              <div className="mt-6 pt-4 border-t border-blue-900/40 flex items-center justify-between text-xs text-[#e5ca7c]">
+                <span className="font-semibold uppercase tracking-wider">Alexian Identity</span>
+                <span>Global Competence &middot; Moral Rectitude</span>
+              </div>
+            </div>
+
+            {/* Mission Card */}
+            <div className="relative bg-gradient-to-br from-blue-950/80 via-slate-900/90 to-[#0c1a36] border-2 border-blue-600/40 rounded-2xl p-8 sm:p-10 shadow-2xl flex flex-col justify-between group hover:border-blue-400 transition-all duration-300">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full blur-2xl pointer-events-none" />
+              <div>
+                <div className="flex items-center space-x-3 mb-6">
+                  <div className="w-12 h-12 rounded-xl bg-blue-500/15 border border-blue-400/40 text-blue-300 flex items-center justify-center shadow-inner">
+                    <Target className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <span className="text-[11px] font-bold text-blue-300 uppercase tracking-widest">Our Purpose</span>
+                    <h3 className="text-2xl font-serif-display font-bold text-white">Institutional Mission</h3>
+                  </div>
+                </div>
+                
+                <blockquote className="text-slate-200 text-base sm:text-lg leading-relaxed font-light italic border-l-4 border-blue-400 pl-5 my-4">
+                  &ldquo;St. Alexius College is dedicated to providing quality, accessible, and values-centered education that nurtures holistic human development through excellence in instruction, innovative research, responsive community engagement, and the integration of Christian and Alexian core values.&rdquo;
+                </blockquote>
+              </div>
+
+              <div className="mt-6 pt-4 border-t border-blue-900/40 flex items-center justify-between text-xs text-blue-300">
+                <span className="font-semibold uppercase tracking-wider">Alexian Commitment</span>
+                <span>Instruction &middot; Research &middot; Community Extension</span>
+              </div>
+            </div>
+
+          </div>
+
+          {/* Institutional Legacy & Heritage Banner */}
+          <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 sm:p-8 flex flex-col md:flex-row items-center justify-between gap-6">
+            <div className="flex items-center space-x-4">
+              <div className="w-14 h-14 rounded-full bg-white p-1 flex-shrink-0 shadow-md">
+                <img src="/logo.png" alt="SAC Logo" className="w-full h-full object-contain" />
+              </div>
+              <div>
+                <h4 className="text-lg font-bold text-white">A Heritage of Healing, Service & Academic Leadership</h4>
+                <p className="text-xs sm:text-sm text-slate-400 mt-1 max-w-2xl">
+                  Founded by Dr. Arturo P. Pingoy and Dr. Amparo Y. Pingoy, St. Alexius College has pioneered excellence in Nursing, Allied Health Sciences, Education, Business, Information Technology, and Security Management in Koronadal City and Region XII.
+                </p>
+              </div>
+            </div>
+            <div className="flex-shrink-0">
+              <button
+                onClick={() => scrollToSection('core-values')}
+                className="px-5 py-2.5 rounded-xl bg-amber-400/10 hover:bg-amber-400/20 text-[#e5ca7c] border border-amber-400/30 text-xs font-bold tracking-wider uppercase transition flex items-center space-x-2"
+              >
+                <span>EXPLORE PILLARS</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+
+        </div>
+      </section>
 
       {/* 5. The 5 Core Values Section */}
       <section id="core-values" className="py-20 bg-[#0a1428] text-white relative">
@@ -407,177 +496,7 @@ export const HomePage: React.FC = () => {
         </div>
       </section>
 
-      {/* 6. The Evaluation Framework Breakdown */}
-      <section id="framework" className="py-20 bg-slate-950 text-white border-t border-slate-800">
-        <div className="max-w-7xl mx-auto px-4 sm:px-8">
-          
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
-            
-            <div className="lg:col-span-5">
-              <span className="text-[#c59b27] text-xs font-bold tracking-[0.25em] uppercase inline-block mb-3">
-                STANDARDS & ASSESSMENT
-              </span>
-              <h2 className="text-3xl sm:text-4xl font-serif-display font-bold text-white mb-6">
-                A Multi-Faceted Evaluation Framework
-              </h2>
-              <p className="text-slate-300 text-sm sm:text-base leading-relaxed mb-6">
-                Our evaluation system integrates verified student evaluations, faculty self-reflections, 
-                and peer reviews to generate clear, actionable insights for academic growth.
-              </p>
-
-              <div className="space-y-4">
-                <div className="flex items-start space-x-3">
-                  <CheckCircle2 className="w-5 h-5 text-[#c59b27] flex-shrink-0 mt-0.5" />
-                  <div>
-                    <h4 className="text-sm font-bold text-white">Confidential & Anonymous Ratings</h4>
-                    <p className="text-xs text-slate-400">Student submissions are strictly anonymized to encourage candid and honest developmental feedback.</p>
-                  </div>
-                </div>
-
-                <div className="flex items-start space-x-3">
-                  <CheckCircle2 className="w-5 h-5 text-[#c59b27] flex-shrink-0 mt-0.5" />
-                  <div>
-                    <h4 className="text-sm font-bold text-white">Institutional Quality Assurance</h4>
-                    <p className="text-xs text-slate-400">Real-time department benchmarks align with CHED and academic accreditation criteria.</p>
-                  </div>
-                </div>
-
-                <div className="flex items-start space-x-3">
-                  <CheckCircle2 className="w-5 h-5 text-[#c59b27] flex-shrink-0 mt-0.5" />
-                  <div>
-                    <h4 className="text-sm font-bold text-white">Actionable Formative Feedback</h4>
-                    <p className="text-xs text-slate-400">Faculty receive targeted feedback summaries with criteria breakdowns to enhance curriculum delivery.</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="lg:col-span-7 grid grid-cols-1 sm:grid-cols-2 gap-4">
-              
-              <div className="bg-slate-900 border border-slate-800 p-6 rounded-xl">
-                <div className="text-2xl font-serif-display font-bold text-[#c59b27] mb-1">01</div>
-                <h4 className="text-base font-bold text-white mb-2">Teaching & Pedagogy</h4>
-                <p className="text-xs text-slate-300 leading-relaxed">
-                  Subject matter expertise, clarity of syllabus, organization of lectures, and utilization of engaging instructional materials.
-                </p>
-              </div>
-
-              <div className="bg-slate-900 border border-slate-800 p-6 rounded-xl">
-                <div className="text-2xl font-serif-display font-bold text-[#c59b27] mb-1">02</div>
-                <h4 className="text-base font-bold text-white mb-2">Classroom Management</h4>
-                <p className="text-xs text-slate-300 leading-relaxed">
-                  Punctuality, conducive learning atmosphere, efficient time management, and encouraging inclusive class participation.
-                </p>
-              </div>
-
-              <div className="bg-slate-900 border border-slate-800 p-6 rounded-xl">
-                <div className="text-2xl font-serif-display font-bold text-[#c59b27] mb-1">03</div>
-                <h4 className="text-base font-bold text-white mb-2">Assessment & Feedback</h4>
-                <p className="text-xs text-slate-300 leading-relaxed">
-                  Fairness of exams, transparency of grading criteria, and timely return of quizzes and assignments.
-                </p>
-              </div>
-
-              <div className="bg-slate-900 border border-slate-800 p-6 rounded-xl">
-                <div className="text-2xl font-serif-display font-bold text-[#c59b27] mb-1">04</div>
-                <h4 className="text-base font-bold text-white mb-2">Core Values Alignment</h4>
-                <p className="text-xs text-slate-300 leading-relaxed">
-                  Demonstration of humility, integrity, simplicity, service, and excellence in student interactions.
-                </p>
-              </div>
-
-            </div>
-
-          </div>
-
-        </div>
-      </section>
-
-      {/* 7. PIECES Framework Section */}
-      <section id="pieces-section" className="py-20 bg-[#0c1a36] text-white border-t border-blue-900/60">
-        <div className="max-w-7xl mx-auto px-4 sm:px-8">
-          
-          <div className="text-center max-w-3xl mx-auto mb-16">
-            <span className="text-[#c59b27] text-xs font-bold tracking-[0.25em] uppercase inline-block mb-3">
-              SYSTEM EVALUATION DIMENSIONS
-            </span>
-            <h2 className="text-3xl sm:text-4xl font-serif-display font-bold text-white mb-4">
-              The PIECES Framework Analysis
-            </h2>
-            <p className="text-slate-300 text-sm sm:text-base leading-relaxed">
-              Evaluating the multidimensional institutional impact of transitioning from semi-manual Google Forms 
-              to an automated, centralized web platform.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            
-            {/* P - Performance */}
-            <div className="bg-slate-900/80 border border-blue-800/40 p-6 rounded-xl relative overflow-hidden">
-              <div className="text-3xl font-serif-display font-extrabold text-[#c59b27] mb-2">P</div>
-              <h3 className="text-lg font-bold text-white mb-2">Performance</h3>
-              <p className="text-xs sm:text-sm text-slate-300 leading-relaxed mb-4">
-                Automating the compilation and mathematical aggregation of student evaluations eliminates manual calculation bottlenecks and drastically reduces report generation turnaround times.
-              </p>
-              <div className="text-[11px] text-amber-300/90 font-medium">Outcome: Rapid throughput & real-time analytics</div>
-            </div>
-
-            {/* I - Information */}
-            <div className="bg-slate-900/80 border border-blue-800/40 p-6 rounded-xl relative overflow-hidden">
-              <div className="text-3xl font-serif-display font-extrabold text-[#c59b27] mb-2">I</div>
-              <h3 className="text-lg font-bold text-white mb-2">Information & Data Quality</h3>
-              <p className="text-xs sm:text-sm text-slate-300 leading-relaxed mb-4">
-                Centralized database persistence ensures data consistency, accurate weighted calculations, and organized archival without spreadsheet encoding discrepancy risks.
-              </p>
-              <div className="text-[11px] text-amber-300/90 font-medium">Outcome: High-fidelity, verified records</div>
-            </div>
-
-            {/* E - Economics */}
-            <div className="bg-slate-900/80 border border-blue-800/40 p-6 rounded-xl relative overflow-hidden">
-              <div className="text-3xl font-serif-display font-extrabold text-[#c59b27] mb-2">E</div>
-              <h3 className="text-lg font-bold text-white mb-2">Economics</h3>
-              <p className="text-xs sm:text-sm text-slate-300 leading-relaxed mb-4">
-                Reduces institutional expenditures on physical paper forms, manual filing supplies, and unnecessary clerical overtime, freeing up resources for faculty development.
-              </p>
-              <div className="text-[11px] text-amber-300/90 font-medium">Outcome: Sustainable, cost-effective operations</div>
-            </div>
-
-            {/* C - Control & Security */}
-            <div className="bg-slate-900/80 border border-blue-800/40 p-6 rounded-xl relative overflow-hidden">
-              <div className="text-3xl font-serif-display font-extrabold text-[#c59b27] mb-2">C</div>
-              <h3 className="text-lg font-bold text-white mb-2">Control & Security</h3>
-              <p className="text-xs sm:text-sm text-slate-300 leading-relaxed mb-4">
-                Implements strict role-based access control (RBAC), student anonymity safeguards, and protected cloud encryption against unauthorized data modification or viewing.
-              </p>
-              <div className="text-[11px] text-amber-300/90 font-medium">Outcome: Robust data privacy & confidentiality</div>
-            </div>
-
-            {/* E - Efficiency */}
-            <div className="bg-slate-900/80 border border-blue-800/40 p-6 rounded-xl relative overflow-hidden">
-              <div className="text-3xl font-serif-display font-extrabold text-[#c59b27] mb-2">E</div>
-              <h3 className="text-lg font-bold text-white mb-2">Efficiency</h3>
-              <p className="text-xs sm:text-sm text-slate-300 leading-relaxed mb-4">
-                Reduces administrative steps for the Guidance Office, enabling instant generation of faculty performance rankings, department summaries, and longitudinal trends.
-              </p>
-              <div className="text-[11px] text-amber-300/90 font-medium">Outcome: Automated end-to-end workflow</div>
-            </div>
-
-            {/* S - Service */}
-            <div className="bg-slate-900/80 border border-blue-800/40 p-6 rounded-xl relative overflow-hidden">
-              <div className="text-3xl font-serif-display font-extrabold text-[#c59b27] mb-2">S</div>
-              <h3 className="text-lg font-bold text-white mb-2">Service</h3>
-              <p className="text-xs sm:text-sm text-slate-300 leading-relaxed mb-4">
-                Provides students with an accessible mobile-friendly evaluation gateway while delivering teachers meaningful, timely formative feedback for continuous instructional growth.
-              </p>
-              <div className="text-[11px] text-amber-300/90 font-medium">Outcome: Improved stakeholder experience</div>
-            </div>
-
-          </div>
-
-        </div>
-      </section>
-
-      {/* 8. Quick Portal Access / Call to Action */}
+      {/* 6. Quick Portal Access / Call to Action */}
       <section className="py-16 bg-[#162a56] text-white text-center relative overflow-hidden">
         <div className="max-w-4xl mx-auto px-4 relative z-10">
           <h2 className="text-3xl sm:text-4xl font-serif-display font-bold text-white mb-4">
@@ -589,14 +508,14 @@ export const HomePage: React.FC = () => {
           <div className="flex flex-wrap justify-center items-center gap-4">
             <button
               onClick={() => navigate('/login')}
-              className="bg-[#c59b27] hover:bg-[#b0881e] text-[#0c1a36] font-bold text-sm tracking-wider uppercase px-8 py-3.5 rounded shadow-xl flex items-center space-x-2 transition-all transform hover:scale-105"
+              className="bg-[#c59b27] hover:bg-[#b0881e] text-[#0c1a36] font-bold text-sm tracking-wider uppercase px-8 py-3.5 rounded shadow-xl flex items-center space-x-2 transition-all transform hover:scale-105 cursor-pointer"
             >
               <LogIn className="w-4 h-4" />
               <span>Sign in to Portal</span>
             </button>
             <button
               onClick={() => navigate('/login')}
-              className="bg-white/10 hover:bg-white/20 border border-white/30 text-white font-semibold text-sm tracking-wider uppercase px-8 py-3.5 rounded transition-all"
+              className="bg-white/10 hover:bg-white/20 border border-white/30 text-white font-semibold text-sm tracking-wider uppercase px-8 py-3.5 rounded transition-all cursor-pointer"
             >
               <span>Register Student Account</span>
             </button>
@@ -604,44 +523,77 @@ export const HomePage: React.FC = () => {
         </div>
       </section>
 
-      {/* 9. Institutional Footer */}
+      {/* 7. Institutional Footer */}
       <footer className="bg-[#081020] text-slate-400 text-xs py-12 border-t border-slate-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-10">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-10">
             
-            <div className="md:col-span-2">
+            <div className="lg:col-span-1">
               <div className="flex items-center space-x-3 mb-4">
                 <div className="w-10 h-10 rounded-full bg-white p-0.5">
                   <img src="/logo.png" alt="St. Alexius Logo" className="w-full h-full object-contain" />
                 </div>
                 <div>
-                  <h4 className="text-white font-serif-display font-bold text-base">St. Alexius College, Inc.</h4>
-                  <p className="text-[10px] tracking-widest text-slate-400 uppercase">Office of Academic Affairs &middot; Guidance Office</p>
+                  <h4 className="text-white font-serif-display font-bold text-base">St. Alexius College</h4>
+                  <p className="text-[10px] tracking-widest text-slate-400 uppercase">Office of Academic Affairs</p>
                 </div>
               </div>
-              <p className="text-slate-400 text-xs leading-relaxed max-w-sm">
-                Founded in 1961 by Dr. Arturo & Dr. Amparo Pingoy, St. Alexius College is committed to delivering quality, value-driven education across Allied Health, Nursing, Information Technology, Business, and Aviation in Koronadal City.
+              <p className="text-slate-400 text-xs leading-relaxed">
+                Founded in 1971 by Dr. Arturo & Dr. Amparo Pingoy, St. Alexius College is committed to delivering quality, value-driven education across Allied Health Sciences, Nursing, and Arts & Sciences in Koronadal City.
               </p>
             </div>
 
             <div>
               <h5 className="text-white font-semibold uppercase tracking-wider text-[11px] mb-3">Academic Portals</h5>
               <ul className="space-y-2">
-                <li><button onClick={() => navigate('/login')} className="hover:text-[#c59b27] transition-colors">Student Evaluation Portal</button></li>
-                <li><button onClick={() => navigate('/login')} className="hover:text-[#c59b27] transition-colors">Faculty Performance Dashboard</button></li>
-                <li><button onClick={() => navigate('/login')} className="hover:text-[#c59b27] transition-colors">Guidance & Testing Center Administration</button></li>
-                <li><button onClick={() => navigate('/portal')} className="hover:text-[#c59b27] transition-colors">Student Verification Status</button></li>
+                <li><button onClick={() => navigate('/login')} className="hover:text-[#c59b27] transition-colors cursor-pointer">Student Evaluation Portal</button></li>
+                <li><button onClick={() => navigate('/login')} className="hover:text-[#c59b27] transition-colors cursor-pointer">Faculty Performance Dashboard</button></li>
+                <li><button onClick={() => navigate('/login')} className="hover:text-[#c59b27] transition-colors cursor-pointer">Guidance & Testing Center</button></li>
+                <li><button onClick={() => navigate('/portal')} className="hover:text-[#c59b27] transition-colors cursor-pointer">Student Verification Status</button></li>
               </ul>
             </div>
 
+            {/* Campus Location */}
             <div>
-              <h5 className="text-white font-semibold uppercase tracking-wider text-[11px] mb-3">Institutional Location & Contacts</h5>
-              <p className="text-slate-400 leading-relaxed">
-                St. Alexius College, Inc.<br />
-                General Santos Drive (Gensan Drive)<br />
-                Koronadal City, South Cotabato, 9506 Philippines<br />
-                Email: <span className="text-slate-300">academics@stalexiuscollege.edu.ph</span>
-              </p>
+              <h5 className="text-white font-semibold uppercase tracking-wider text-[11px] mb-3 flex items-center space-x-1.5">
+                <MapPin className="w-3.5 h-3.5 text-[#c59b27]" />
+                <span>Campus Location</span>
+              </h5>
+              <div className="text-slate-400 leading-relaxed space-y-1 bg-slate-900/40 p-3 rounded-lg border border-slate-800/80">
+                <p className="font-bold text-slate-200">St. Alexius College, Inc.</p>
+                <p>Gensan Drive, Brgy. Zone IV,</p>
+                <p>City of Koronadal, 9506,</p>
+                <p>South Cotabato, Philippines</p>
+              </div>
+            </div>
+
+            {/* Contacts beside Campus Location */}
+            <div>
+              <h5 className="text-white font-semibold uppercase tracking-wider text-[11px] mb-3 flex items-center space-x-1.5">
+                <Phone className="w-3.5 h-3.5 text-[#c59b27]" />
+                <span>Contact Channels</span>
+              </h5>
+              <div className="space-y-2 text-slate-400 leading-relaxed bg-slate-900/40 p-3 rounded-lg border border-slate-800/80">
+                <div>
+                  <span className="text-[10px] uppercase font-bold text-slate-500 block">Landline</span>
+                  <a href="tel:0832282019" className="text-slate-300 hover:text-amber-400 font-mono transition">
+                    (083) 228 2019
+                  </a>
+                </div>
+                <div>
+                  <span className="text-[10px] uppercase font-bold text-slate-500 block">Mobile Numbers</span>
+                  <div className="flex flex-col space-y-0.5 font-mono text-slate-300">
+                    <a href="tel:09209748650" className="hover:text-amber-400 transition">0920 974 8650</a>
+                    <a href="tel:09088127461" className="hover:text-amber-400 transition">0908 812 7461</a>
+                  </div>
+                </div>
+                <div className="pt-1 border-t border-slate-800/60">
+                  <span className="text-[10px] uppercase font-bold text-slate-500 block">Email</span>
+                  <a href="mailto:admin@stalexiuscollege.edu.ph" className="text-amber-300 hover:underline break-all block mt-0.5">
+                    admin@stalexiuscollege.edu.ph
+                  </a>
+                </div>
+              </div>
             </div>
 
           </div>
