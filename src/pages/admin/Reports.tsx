@@ -6,7 +6,7 @@ import {
   Printer, Download, FileText, BarChart2, Filter, PieChart as PieIcon, Award, Mail, Send, 
   CheckCircle2, History, X, Sparkles, ShieldCheck, FileSpreadsheet, Eye, Sliders, ChevronDown, 
   Check, FileDown, Layers, Building2, User, HelpCircle, Search, CheckSquare, Square, RotateCcw,
-  Users, TrendingUp
+  Users, TrendingUp, RefreshCw, MessageSquare, Star, Zap, Trash2
 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { DEFAULT_CRITERIA, EvaluationCriterion } from '../../lib/criteria';
@@ -18,8 +18,15 @@ import {
   exportIndividualTeacherCSV, 
   getPerformanceDescriptor 
 } from '../../lib/performanceReportExporter';
+import { 
+  seedDemoDataToStorage, 
+  clearDemoDataFromStorage, 
+  isDemoDataSeeded,
+  DEMO_FACULTY_MEMBERS 
+} from '../../lib/demoReportsData';
 import { logActivity } from '../../lib/activityLogger';
 import { useAuth } from '../../contexts/AuthContext';
+import { getStoredDepartments, subscribeToDepartments } from '../../lib/departments';
 
 interface TeacherReport {
   id: string;
@@ -39,8 +46,13 @@ export const Reports: React.FC = () => {
   const [reports, setReports] = useState<TeacherReport[]>([]);
   const [rawEvaluations, setRawEvaluations] = useState<any[]>([]);
   const [criteriaList, setCriteriaList] = useState<EvaluationCriterion[]>(DEFAULT_CRITERIA);
-  const [departmentsList, setDepartmentsList] = useState<string[]>([]);
+  const [departmentsList, setDepartmentsList] = useState<string[]>(() => getStoredDepartments());
   
+  // Refresh & Demo Benchmark State
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [demoActive, setDemoActive] = useState<boolean>(isDemoDataSeeded());
+  const [demoActionNotice, setDemoActionNotice] = useState<string | null>(null);
+
   // Multi-select Department Filter State
   const [selectedDepts, setSelectedDepts] = useState<string[]>([]);
   const [deptDropdownOpen, setDeptDropdownOpen] = useState(false);
@@ -92,11 +104,11 @@ export const Reports: React.FC = () => {
       }
     }).catch(err => console.warn("Could not load general settings for reports:", err));
 
-    const unsubDept = onSnapshot(doc(db, 'settings', 'departments'), (snap) => {
-      if (snap.exists() && snap.data().items?.length) {
-        setDepartmentsList(snap.data().items);
+    const unsubDept = subscribeToDepartments((items) => {
+      if (items && items.length > 0) {
+        setDepartmentsList(items);
       }
-    }, (err) => console.warn("Reports dept snapshot info:", err));
+    });
 
     const unsubNotifs = onSnapshot(collection(db, 'notifications'), (snapshot) => {
       const logs: EmailNotificationRecord[] = snapshot.docs.map(docSnap => {
@@ -186,6 +198,22 @@ export const Reports: React.FC = () => {
           console.warn("Local evals merge notice in Reports:", e);
         }
 
+        // Auto-seed demo dataset if reports are completely empty so user sees instant full demo data
+        if (teachersList.length === 0 && activeEvaluations.length === 0 && !isDemoDataSeeded()) {
+          console.log("No reports records detected; auto-seeding comprehensive SAC demo benchmark dataset...");
+          seedDemoDataToStorage();
+          setDemoActive(true);
+          // Re-fetch merged local data
+          try {
+            const seededTeachers = JSON.parse(localStorage.getItem('sac_local_teachers') || '{}');
+            teachersList = Object.values(seededTeachers);
+            const seededEvals = JSON.parse(localStorage.getItem('sac_local_evaluations') || '{}');
+            activeEvaluations = Object.values(seededEvals);
+          } catch {}
+        } else {
+          setDemoActive(isDemoDataSeeded());
+        }
+
         setRawEvaluations(activeEvaluations);
 
         // 3. Aggregate data per teacher
@@ -243,7 +271,75 @@ export const Reports: React.FC = () => {
       unsubDept();
       unsubNotifs();
     };
-  }, [user]);
+  }, [user, refreshTrigger]);
+
+  // Demo Benchmark Handlers
+  const handleLoadDemoBenchmark = () => {
+    const result = seedDemoDataToStorage();
+    setDemoActive(true);
+    setRefreshTrigger(prev => prev + 1);
+    setDemoActionNotice(`Successfully populated complete SAC Benchmark Demo Dataset: ${result.teacherCount} Faculty across 6 colleges & ${result.evalCount} Student Evaluations.`);
+    setTimeout(() => setDemoActionNotice(null), 6000);
+  };
+
+  const handleClearDemoData = () => {
+    clearDemoDataFromStorage();
+    setDemoActive(false);
+    setRefreshTrigger(prev => prev + 1);
+    setDemoActionNotice(`Cleared benchmark demo records. Restored to live database evaluation records.`);
+    setTimeout(() => setDemoActionNotice(null), 5000);
+  };
+
+  const handleSimulateStudentReview = () => {
+    try {
+      const currentTeachers = reports.length > 0 ? reports : DEMO_FACULTY_MEMBERS;
+      const randomTeacher = currentTeachers[Math.floor(Math.random() * currentTeachers.length)];
+      
+      const newScoreObj: Record<string, number> = {};
+      let sum = 0;
+      ['subjectKnowledge', 'teachingMethods', 'communication', 'punctuality', 'fairness'].forEach(k => {
+        const s = Math.floor(Math.random() * 2) + 4; // 4 or 5
+        newScoreObj[k] = s;
+        sum += s;
+      });
+      const avg = Number((sum / 5).toFixed(2));
+
+      const comments = [
+        "Incredible energy and passion during lecture discussions. Always makes tough topics feel accessible!",
+        "Provides constructive comments on our case study papers that genuinely help us improve.",
+        "Very punctual and organized with syllabus timelines and examination schedules.",
+        "Demonstrates high clinical and academic mastery with clear real-world examples."
+      ];
+      const comment = comments[Math.floor(Math.random() * comments.length)];
+
+      const newEval = {
+        id: `demo-live-sim-${Date.now()}`,
+        teacherId: randomTeacher.id,
+        teacherName: randomTeacher.name,
+        teacherDepartment: randomTeacher.department,
+        subject: 'Major Departmental Course',
+        yearLevel: '3rd Year',
+        academicYear,
+        semester,
+        answers: newScoreObj,
+        computedScore: avg,
+        comments: comment,
+        sentiment: 'positive' as const,
+        createdAt: new Date().toISOString()
+      };
+
+      const localEvals = JSON.parse(localStorage.getItem('sac_local_evaluations') || '{}');
+      localEvals[newEval.id] = newEval;
+      localStorage.setItem('sac_local_evaluations', JSON.stringify(localEvals));
+      
+      setDemoActive(true);
+      setRefreshTrigger(prev => prev + 1);
+      setDemoActionNotice(`Simulated 1 live incoming student evaluation for Prof. ${randomTeacher.name} (Score: ${avg}/5.00). Analytics updated in real-time!`);
+      setTimeout(() => setDemoActionNotice(null), 6000);
+    } catch (err) {
+      console.error("Simulation error:", err);
+    }
+  };
 
   // All distinct available departments from settings & teacher reports
   const allAvailableDepartments = useMemo(() => {
@@ -601,6 +697,26 @@ export const Reports: React.FC = () => {
     dept.toLowerCase().includes(deptSearchTerm.toLowerCase())
   );
 
+  // Top 3 faculty performers in current active scope
+  const topPerformers = useMemo(() => {
+    return [...filteredReports]
+      .filter(r => r.evaluationCount > 0)
+      .sort((a, b) => b.averageScore - a.averageScore)
+      .slice(0, 3);
+  }, [filteredReports]);
+
+  // Highest & lowest rated criteria dimensions
+  const highestCriterion = useMemo(() => {
+    if (dynamicCriteriaStats.length === 0) return null;
+    return [...dynamicCriteriaStats].sort((a, b) => b.average - a.average)[0];
+  }, [dynamicCriteriaStats]);
+
+  const lowestCriterion = useMemo(() => {
+    if (dynamicCriteriaStats.length === 0) return null;
+    const valid = [...dynamicCriteriaStats].filter(c => c.average > 0);
+    return valid.length > 0 ? valid.sort((a, b) => a.average - b.average)[0] : null;
+  }, [dynamicCriteriaStats]);
+
   if (loading) return <div className="p-8 text-gray-500">Compiling institution evaluation analytics...</div>;
 
   return (
@@ -664,6 +780,79 @@ export const Reports: React.FC = () => {
           </button>
         </div>
       </div>
+
+      {/* Demo Benchmark Management Toolbar */}
+      <div className="bg-gradient-to-r from-slate-900 via-blue-950 to-indigo-950 text-white p-4 sm:p-5 rounded-2xl shadow-md border border-blue-800/40 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 print:hidden">
+        <div className="flex items-start space-x-3">
+          <div className="w-10 h-10 rounded-xl bg-amber-400/20 border border-amber-300/40 flex items-center justify-center text-amber-300 flex-shrink-0 mt-0.5">
+            <Sparkles className="w-5 h-5" />
+          </div>
+          <div>
+            <div className="flex items-center space-x-2">
+              <h2 className="text-sm sm:text-base font-bold text-white">
+                SAC Demo Reports & Benchmark Hub
+              </h2>
+              {demoActive ? (
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 flex items-center">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 mr-1.5 animate-pulse" />
+                  Benchmark Demo Data Active
+                </span>
+              ) : (
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-blue-500/20 text-blue-200 border border-blue-400/30">
+                  Live Database Records
+                </span>
+              )}
+            </div>
+            <p className="text-xs text-blue-200/80 mt-0.5">
+              Instantly test and inspect multi-department rating analytics, individual dossiers, PDF exports, and simulated student evaluations.
+            </p>
+          </div>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
+          <button
+            onClick={handleLoadDemoBenchmark}
+            className="flex-1 sm:flex-none px-3.5 py-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950 font-extrabold text-xs rounded-xl shadow-sm transition-all flex items-center justify-center space-x-1.5 active:scale-95"
+            title="Populate 8 faculty profiles across 6 colleges and 178 student evaluations"
+          >
+            <RefreshCw className="w-3.5 h-3.5" />
+            <span>Load SAC Benchmark Data</span>
+          </button>
+
+          <button
+            onClick={handleSimulateStudentReview}
+            className="flex-1 sm:flex-none px-3 py-2 bg-blue-800/80 hover:bg-blue-700 text-white font-bold text-xs rounded-xl border border-blue-600/50 shadow-sm transition-all flex items-center justify-center space-x-1.5 active:scale-95"
+            title="Simulate 1 incoming real-time student evaluation"
+          >
+            <Zap className="w-3.5 h-3.5 text-amber-300" />
+            <span>Simulate Student Review</span>
+          </button>
+
+          {demoActive && (
+            <button
+              onClick={handleClearDemoData}
+              className="px-3 py-2 bg-rose-950/60 hover:bg-rose-900 text-rose-200 hover:text-white font-bold text-xs rounded-xl border border-rose-800/50 shadow-sm transition-all flex items-center justify-center space-x-1 active:scale-95"
+              title="Clear demo benchmark records"
+            >
+              <Trash2 className="w-3.5 h-3.5 text-rose-400" />
+              <span>Reset</span>
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Demo Action Toast Notice */}
+      {demoActionNotice && (
+        <div className="bg-amber-50 border border-amber-300 p-4 rounded-xl flex items-center justify-between text-amber-950 text-xs font-semibold shadow-sm animate-fade-in print:hidden">
+          <div className="flex items-center space-x-2">
+            <Sparkles className="w-4 h-4 text-amber-600 flex-shrink-0" />
+            <span>{demoActionNotice}</span>
+          </div>
+          <button onClick={() => setDemoActionNotice(null)} className="text-amber-700 hover:text-amber-950">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
 
       {/* Printable Header for Browser Print */}
       <div className="hidden print:block text-center mb-8">
@@ -971,6 +1160,99 @@ export const Reports: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Top Faculty Performers & Strategic Institutional Insights Section */}
+      {topPerformers.length > 0 && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 print:break-inside-avoid">
+          {/* Top 3 Faculty Card */}
+          <div className="lg:col-span-2 bg-gradient-to-br from-slate-900 via-blue-950 to-indigo-950 text-white p-5 rounded-xl shadow-sm border border-blue-800/40 space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <Award className="w-5 h-5 text-amber-400" />
+                <h3 className="text-sm font-bold text-white uppercase tracking-wider">
+                  Top Performing Faculty in Scope
+                </h3>
+              </div>
+              <span className="text-xs text-amber-300 font-semibold bg-amber-400/10 px-2 py-0.5 rounded-full border border-amber-300/20">
+                Dean's List of Excellence
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+              {topPerformers.map((prof, idx) => (
+                <div 
+                  key={prof.id} 
+                  onClick={() => setPreviewTeacherDossier(prof)}
+                  className="bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl p-3.5 transition-all cursor-pointer group"
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-black ${
+                      idx === 0 ? 'bg-amber-400 text-slate-950 shadow-md' : idx === 1 ? 'bg-slate-300 text-slate-950' : 'bg-amber-700 text-white'
+                    }`}>
+                      #{idx + 1}
+                    </span>
+                    <span className="text-[11px] font-extrabold text-amber-300 bg-amber-400/10 px-2 py-0.5 rounded">
+                      {prof.averageScore.toFixed(2)} / 5.0
+                    </span>
+                  </div>
+
+                  <div className="text-sm font-bold text-white group-hover:text-amber-300 transition-colors truncate">
+                    {prof.name}
+                  </div>
+                  <div className="text-[11px] text-blue-200/80 truncate mt-0.5">
+                    {prof.department}
+                  </div>
+                  <div className="text-[10px] text-gray-400 mt-2 flex items-center justify-between border-t border-white/5 pt-1.5">
+                    <span>{prof.evaluationCount} evaluations</span>
+                    <span className="text-blue-300 group-hover:underline flex items-center">
+                      View Dossier →
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Institutional Strengths & Training Focus Card */}
+          <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100 flex flex-col justify-between space-y-3">
+            <div>
+              <div className="flex items-center space-x-2 text-gray-900 mb-2">
+                <TrendingUp className="w-4 h-4 text-emerald-600" />
+                <h3 className="text-xs font-bold uppercase tracking-wider text-gray-600">
+                  Institutional Action Insights
+                </h3>
+              </div>
+
+              <div className="space-y-3">
+                {highestCriterion && (
+                  <div className="p-2.5 rounded-lg bg-emerald-50/70 border border-emerald-100">
+                    <div className="text-[10px] font-bold text-emerald-800 uppercase tracking-wider">Top Evaluated Strength</div>
+                    <div className="text-xs font-bold text-emerald-950 mt-0.5">{highestCriterion.name}</div>
+                    <div className="text-[11px] text-emerald-700 font-semibold mt-0.5">
+                      Composite Average: <span className="font-extrabold">{highestCriterion.average.toFixed(2)} / 5.00</span>
+                    </div>
+                  </div>
+                )}
+
+                {lowestCriterion && (
+                  <div className="p-2.5 rounded-lg bg-amber-50/70 border border-amber-100">
+                    <div className="text-[10px] font-bold text-amber-800 uppercase tracking-wider">Faculty Development Focus</div>
+                    <div className="text-xs font-bold text-amber-950 mt-0.5">{lowestCriterion.name}</div>
+                    <div className="text-[11px] text-amber-700 font-semibold mt-0.5">
+                      Target Area Average: <span className="font-extrabold">{lowestCriterion.average.toFixed(2)} / 5.00</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="text-[11px] text-gray-400 pt-2 border-t border-gray-100 flex items-center justify-between">
+              <span>Scope: {getSelectedScopeLabel()}</span>
+              <span className="text-blue-700 font-semibold">{totalEvaluationsCount} Total Reviews</span>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Analytics Charts Grid - Dynamically Updated */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 print:break-inside-avoid">
@@ -1502,6 +1784,48 @@ export const Reports: React.FC = () => {
                     );
                   })}
                 </div>
+              </div>
+
+              {/* Student Qualitative Feedback & Comments */}
+              <div className="space-y-3 pt-2 border-t border-gray-100">
+                <h4 className="text-xs font-extrabold text-gray-700 uppercase tracking-wider flex items-center">
+                  <MessageSquare className="w-4 h-4 mr-1 text-blue-700" />
+                  Student Qualitative Feedback & Reflections
+                </h4>
+
+                {(() => {
+                  const teacherEvals = rawEvaluations.filter(e => e.teacherId === previewTeacherDossier.id && e.comments && e.comments.trim().length > 0);
+                  if (teacherEvals.length === 0) {
+                    return (
+                      <div className="p-4 rounded-xl bg-gray-50 border border-gray-100 text-center text-xs text-gray-400">
+                        No written qualitative remarks recorded for this faculty member yet.
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <div className="space-y-2.5 max-h-60 overflow-y-auto pr-1">
+                      {teacherEvals.map((ev, idx) => (
+                        <div key={ev.id || idx} className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-1.5">
+                          <div className="flex items-center justify-between text-[11px]">
+                            <span className="font-bold text-gray-700">
+                              {ev.subject || 'Academic Course'} {ev.yearLevel ? `• ${ev.yearLevel}` : ''}
+                            </span>
+                            <span className="px-2 py-0.5 rounded-md text-[10px] font-extrabold bg-emerald-100 text-emerald-800">
+                              Score: {Number(ev.computedScore || 0).toFixed(2)}/5.0
+                            </span>
+                          </div>
+                          <p className="text-xs text-gray-700 italic leading-relaxed">
+                            "{ev.comments}"
+                          </p>
+                          <div className="text-[10px] text-gray-400">
+                            Evaluated: {ev.createdAt ? new Date(ev.createdAt).toLocaleDateString() : 'Current Period'}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })()}
               </div>
             </div>
 

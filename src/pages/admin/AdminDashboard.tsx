@@ -9,6 +9,7 @@ import { StudentVerificationManager } from '../../components/admin/StudentVerifi
 import { QuickStats } from '../../components/admin/QuickStats';
 import { ActivityLog } from '../../components/ActivityLog';
 import { DashboardSkeleton } from '../../components/DashboardSkeleton';
+import { getStoredDepartments, subscribeToDepartments } from '../../lib/departments';
 
 export const AdminDashboard: React.FC = () => {
   const navigate = useNavigate();
@@ -19,16 +20,7 @@ export const AdminDashboard: React.FC = () => {
   const [endDate, setEndDate] = useState('');
   const [collegeTargetMode, setCollegeTargetMode] = useState<'all' | 'selective'>('all');
   const [allowedColleges, setAllowedColleges] = useState<string[]>([]);
-  const [availableColleges, setAvailableColleges] = useState<string[]>([
-    'College of Nursing',
-    'College of Information Technology',
-    'College of Engineering',
-    'College of Education',
-    'College of Business Administration',
-    'College of Criminology',
-    'College of Arts & Sciences',
-    'College of Allied Health Sciences'
-  ]);
+  const [availableColleges, setAvailableColleges] = useState<string[]>(() => getStoredDepartments());
   const [stats, setStats] = useState({ teachers: 0, evaluations: 0, students: 0, pendingVerifications: 0 });
   const [recentTeachers, setRecentTeachers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -79,18 +71,12 @@ export const AdminDashboard: React.FC = () => {
       setLoading(false);
     });
 
-    // Fetch custom departments/colleges from settings once or listener
-    const fetchDepartments = async () => {
-      try {
-        const deptDoc = await getDoc(doc(db, 'settings', 'departments'));
-        if (deptDoc.exists() && deptDoc.data().items?.length) {
-          setAvailableColleges(deptDoc.data().items);
-        }
-      } catch (error) {
-        console.warn("Error fetching departments:", error);
+    // Real-time departments listener
+    const unsubscribeDepts = subscribeToDepartments((items) => {
+      if (items && items.length > 0) {
+        setAvailableColleges(items);
       }
-    };
-    fetchDepartments();
+    });
 
     // Real-time listeners for stats
     let usersSnapshotList: any[] = [];
@@ -128,6 +114,16 @@ export const AdminDashboard: React.FC = () => {
         });
       } catch {}
 
+      // Also incorporate localStorage teachers
+      try {
+        const localTeachers = JSON.parse(localStorage.getItem('sac_local_teachers') || '{}');
+        Object.entries(localTeachers).forEach(([id, tData]: [string, any]) => {
+          if (!userMap[id]) {
+            userMap[id] = { id, role: 'teacher', ...tData };
+          }
+        });
+      } catch {}
+
       let pendingCount = 0;
       Object.values(userMap).forEach((data: any) => {
         const userEmail = (data.email || '').toLowerCase().trim();
@@ -150,7 +146,20 @@ export const AdminDashboard: React.FC = () => {
         }
       });
 
-      setStats(prev => ({ ...prev, teachers: tCount, students: sCount, pendingVerifications: pendingCount }));
+      // Calculate total evaluations (Firestore + localStorage)
+      let localEvalCount = 0;
+      try {
+        const localEvals = JSON.parse(localStorage.getItem('sac_local_evaluations') || '{}');
+        localEvalCount = Object.keys(localEvals).length;
+      } catch {}
+
+      setStats(prev => ({ 
+        ...prev, 
+        teachers: tCount, 
+        students: sCount, 
+        pendingVerifications: pendingCount,
+        evaluations: (prev.evaluations || 0) + localEvalCount
+      }));
       setRecentTeachers(teachersList.sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || '')).slice(0, 5));
     };
 
@@ -169,14 +178,13 @@ export const AdminDashboard: React.FC = () => {
     window.addEventListener('storage', handleSync);
 
     const unsubscribeEvals = onSnapshot(collection(db, 'evaluations'), (snapshot) => {
-      setStats(prev => ({ ...prev, evaluations: snapshot.size }));
+      let localEvalCount = 0;
+      try {
+        const localEvals = JSON.parse(localStorage.getItem('sac_local_evaluations') || '{}');
+        localEvalCount = Object.keys(localEvals).length;
+      } catch {}
+      setStats(prev => ({ ...prev, evaluations: snapshot.size + localEvalCount }));
     }, (err) => console.warn("Admin evals snapshot info:", err));
-
-    const unsubscribeDepts = onSnapshot(doc(db, 'settings', 'departments'), (snap) => {
-      if (snap.exists() && snap.data().items?.length) {
-        setAvailableColleges(snap.data().items);
-      }
-    }, (err) => console.warn("Admin depts snapshot info:", err));
 
     return () => {
       unsubscribeEval();

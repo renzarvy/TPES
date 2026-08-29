@@ -4,6 +4,7 @@ import { db, storage } from '../../lib/firebase';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { compressImageFile } from '../../lib/imageCompressor';
+import { getStoredDepartments, subscribeToDepartments } from '../../lib/departments';
 import { 
   ShieldCheck, ShieldAlert, Clock, IdCard, Upload, Camera, Trash2, 
   CheckCircle2, AlertCircle, FileText, ArrowRight, RefreshCw, ZoomIn, Eye, Sparkles,
@@ -38,16 +39,7 @@ export const StudentRegistrationPortal: React.FC<StudentRegistrationPortalProps>
   const [uploadSuccess, setUploadSuccess] = useState<string | null>(null);
   const [showSuccessToast, setShowSuccessToast] = useState(false);
   const [showLightbox, setShowLightbox] = useState(false);
-  const [availableDepartments, setAvailableDepartments] = useState<string[]>([
-    'College of Nursing',
-    'College of Information Technology',
-    'College of Engineering',
-    'College of Education',
-    'College of Business Administration',
-    'College of Criminology',
-    'College of Arts & Sciences',
-    'College of Allied Health Sciences'
-  ]);
+  const [availableDepartments, setAvailableDepartments] = useState<string[]>(() => getStoredDepartments());
 
   // Synchronize initial input if userProfile updates
   useEffect(() => {
@@ -60,20 +52,16 @@ export const StudentRegistrationPortal: React.FC<StudentRegistrationPortalProps>
     }
   }, [userProfile]);
 
-  // Fetch departments list from Firestore settings
+  // Real-time synchronization of academic college departments
   useEffect(() => {
-    const fetchDepartments = async () => {
-      try {
-        const docSnap = await getDoc(doc(db, 'settings', 'departments'));
-        if (docSnap.exists() && docSnap.data().items?.length) {
-          setAvailableDepartments(docSnap.data().items);
-        }
-      } catch (e) {
-        console.warn('Could not fetch department list:', e);
+    const unsubscribe = subscribeToDepartments((depts) => {
+      if (depts && depts.length > 0) {
+        setAvailableDepartments(depts);
+        setSelectedDepartment(prev => depts.includes(prev) ? prev : (userProfile?.department || depts[0]));
       }
-    };
-    fetchDepartments();
-  }, []);
+    });
+    return () => unsubscribe();
+  }, [userProfile]);
 
   // Auto-dismiss success toast after 6 seconds
   useEffect(() => {

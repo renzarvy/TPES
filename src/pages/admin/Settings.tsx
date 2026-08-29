@@ -5,6 +5,7 @@ import { db } from '../../lib/firebase';
 import { useAuth } from '../../contexts/AuthContext';
 import { Settings as SettingsIcon, Save, Mail, Calendar, Bell, Plus, Trash2, Edit2, Check, ShieldAlert, Building2, ListChecks, X, History, Search, ShieldCheck, UserCheck, UserPlus, Shield, UserX } from 'lucide-react';
 import { DEFAULT_CRITERIA, EvaluationCriterion } from '../../lib/criteria';
+import { getStoredDepartments, subscribeToDepartments, saveDepartmentsToStorage } from '../../lib/departments';
 import { ActivityLog } from '../../components/ActivityLog';
 import { UserRoleManager } from '../../components/admin/UserRoleManager';
 import { logActivity } from '../../lib/activityLogger';
@@ -43,14 +44,8 @@ export const Settings: React.FC = () => {
   const [editLabel, setEditLabel] = useState('');
   const [editDesc, setEditDesc] = useState('');
 
-  // Department management
-  const [departments, setDepartments] = useState<string[]>([
-    'College of Nursing',
-    'College of Engineering',
-    'College of Education',
-    'College of Information Technology',
-    'College of Business Administration'
-  ]);
+  // Department management with real-time sync
+  const [departments, setDepartments] = useState<string[]>(() => getStoredDepartments());
   const [newDeptName, setNewDeptName] = useState('');
   const [editingDeptIndex, setEditingDeptIndex] = useState<number | null>(null);
   const [editDeptText, setEditDeptText] = useState('');
@@ -101,11 +96,11 @@ export const Settings: React.FC = () => {
     fetchAllSettings();
 
     // Subscribe to real-time updates for departments/colleges
-    const unsubDept = onSnapshot(doc(db, 'settings', 'departments'), (snapshot) => {
-      if (snapshot.exists() && snapshot.data().items) {
-        setDepartments(snapshot.data().items);
+    const unsubDept = subscribeToDepartments((items) => {
+      if (items && items.length > 0) {
+        setDepartments(items);
       }
-    }, (err) => console.warn("Settings dept snapshot info:", err));
+    });
 
     // Subscribe to real-time audit logs
     const unsubAudit = onSnapshot(collection(db, 'audit_logs'), (snapshot) => {
@@ -361,16 +356,16 @@ export const Settings: React.FC = () => {
   // Department handlers with real-time auto-save & audit logging
   const saveDepartmentsToFirestore = async (newDepts: string[]) => {
     try {
-      await setDoc(doc(db, 'settings', 'departments'), { items: newDepts }, { merge: true });
+      await saveDepartmentsToStorage(newDepts);
     } catch (err) {
-      console.error("Failed to save departments to Firestore:", err);
+      console.error("Failed to save departments to storage:", err);
     }
   };
 
   const handleAddDepartment = async () => {
     const trimmed = newDeptName.trim();
     if (!trimmed) return;
-    if (departments.includes(trimmed)) {
+    if (departments.some(d => d.toLowerCase() === trimmed.toLowerCase())) {
       alert("Department/College already exists.");
       return;
     }
@@ -408,7 +403,7 @@ export const Settings: React.FC = () => {
       alert("At least one department/college must remain.");
       return;
     }
-    if (!confirm(`Are you sure you want to remove "${dept}"? This change will be permanently recorded in the audit log.`)) {
+    if (!confirm(`Are you sure you want to remove "${dept}"? This change will be permanently recorded in the audit log and synchronized across the system.`)) {
       return;
     }
     const updated = departments.filter(d => d !== dept);

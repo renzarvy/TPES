@@ -6,6 +6,7 @@ import { db } from '../../lib/firebase';
 import { useAuth } from '../../contexts/AuthContext';
 import { logActivity } from '../../lib/activityLogger';
 import { Users, Star, Edit, Trash2, Plus, X, Search, Filter, Building2 } from 'lucide-react';
+import { getStoredDepartments, subscribeToDepartments } from '../../lib/departments';
 
 interface TeacherData {
   id: string;
@@ -42,7 +43,7 @@ export const Teachers: React.FC = () => {
   });
   const [isSaving, setIsSaving] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
-  const [departments, setDepartments] = useState<string[]>([]);
+  const [departments, setDepartments] = useState<string[]>(() => getStoredDepartments());
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedDepartment, setSelectedDepartment] = useState('ALL');
 
@@ -50,11 +51,11 @@ export const Teachers: React.FC = () => {
     if (!user) return;
 
     // Real-time departments listener
-    const unsubDept = onSnapshot(doc(db, 'settings', 'departments'), (snap) => {
-      if (snap.exists() && snap.data().items?.length) {
-        setDepartments(snap.data().items);
+    const unsubDept = subscribeToDepartments((items) => {
+      if (items && items.length > 0) {
+        setDepartments(items);
       }
-    }, (err) => console.warn("Teachers dept snapshot info:", err));
+    });
 
     const fetchTeachersAndScores = async () => {
       try {

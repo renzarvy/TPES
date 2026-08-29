@@ -1,19 +1,17 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { getStoredDepartments, subscribeToDepartments } from '../lib/departments';
 import { 
-  GraduationCap, 
   Lock, 
   Mail, 
   User, 
   ArrowRight, 
   AlertCircle, 
-  ShieldCheck, 
   Eye, 
   EyeOff, 
   CheckCircle2,
   Building2,
-  Sparkles,
   RefreshCw,
   BookOpen
 } from 'lucide-react';
@@ -24,10 +22,9 @@ export const Login: React.FC = () => {
     signInWithEmail, 
     signUpWithEmail, 
     signInWithGoogle, 
-    signInWithEmergencySession,
     resetPassword,
     authError, 
-    clearAuthError,
+    clearAuthError, 
     loading 
   } = useAuth();
 
@@ -37,20 +34,25 @@ export const Login: React.FC = () => {
   const [fullName, setFullName] = useState('');
   const [idNumber, setIdNumber] = useState('');
   const [accountRole, setAccountRole] = useState<'student' | 'teacher'>('student');
-  const [department, setDepartment] = useState('College of Nursing');
+  const [departments, setDepartments] = useState<string[]>(() => getStoredDepartments());
+  const [department, setDepartment] = useState<string>(() => {
+    const list = getStoredDepartments();
+    return list[0] || 'College of Nursing';
+  });
   const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [localMsg, setLocalMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
-  const departments = [
-    'College of Nursing',
-    'College of Pharmacy',
-    'College of Radiologic Technology',
-    'College of Medical Laboratory Science',
-    'College of Arts and Sciences',
-    'College of Business & Accountancy',
-    'Senior High School Department'
-  ];
+  // Real-time synchronization of academic college departments
+  useEffect(() => {
+    const unsubscribe = subscribeToDepartments((updatedDepts) => {
+      if (updatedDepts && updatedDepts.length > 0) {
+        setDepartments(updatedDepts);
+        setDepartment(prev => updatedDepts.includes(prev) ? prev : updatedDepts[0]);
+      }
+    });
+    return () => unsubscribe();
+  }, []);
 
   const handleAuthSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -109,75 +111,53 @@ export const Login: React.FC = () => {
     }
   };
 
-  const handleQuickDemo = async (roleType: 'student' | 'teacher' | 'admin') => {
-    clearAuthError();
-    setLocalMsg(null);
-    setSubmitting(true);
-    try {
-      let demoEmail = 'student@stalexiuscollege.edu.ph';
-      let demoName = 'Juan Dela Cruz (Student Demo)';
-      let demoId = '2023-10492';
-      let demoDept = 'College of Nursing';
-
-      if (roleType === 'teacher') {
-        demoEmail = 'faculty@stalexiuscollege.edu.ph';
-        demoName = 'Prof. Maria Santos (Faculty Demo)';
-        demoId = 'EMP-8842';
-        demoDept = 'College of Nursing';
-      } else if (roleType === 'admin') {
-        demoEmail = 'renzarvy.rv@gmail.com';
-        demoName = 'Super Administrator';
-        demoId = 'ADM-0001';
-        demoDept = 'Academic Affairs';
-      }
-
-      await signInWithEmergencySession(demoEmail, roleType, demoName, {
-        department: demoDept,
-        idNumber: demoId,
-        studentId: roleType === 'student' ? demoId : undefined,
-        employeeId: roleType === 'teacher' ? demoId : undefined
-      });
-
-      navigate('/dashboard');
-    } catch (err: any) {
-      console.error('Quick demo error:', err);
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#0c1a36] via-[#11224d] to-[#0a152e] flex flex-col justify-center py-12 sm:px-6 lg:px-8 text-slate-100">
       
       {/* Brand Header */}
       <div className="sm:mx-auto sm:w-full sm:max-w-md text-center px-4">
-        <Link to="/" className="inline-flex items-center space-x-3 group mb-4">
-          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center shadow-lg shadow-amber-500/20 group-hover:scale-105 transition-transform duration-200">
-            <GraduationCap className="w-7 h-7 text-slate-950" />
-          </div>
-          <div className="text-left">
-            <h1 className="text-xl font-bold tracking-tight text-white leading-tight">
+        <Link to="/" className="inline-flex items-center space-x-3 group mb-3">
+          <div className="text-center">
+            <h1 className="text-2xl font-black tracking-tight text-white leading-tight">
               ST. ALEXIUS COLLEGE
             </h1>
-            <p className="text-[11px] font-semibold text-amber-400 uppercase tracking-widest">
-              Faculty Evaluation System
+            <p className="text-xs font-semibold text-amber-400 uppercase tracking-widest mt-0.5">
+              Teacher Performance Evaluation System
             </p>
           </div>
         </Link>
-        <h2 className="text-2xl font-extrabold text-white tracking-tight">
+        <h2 className="text-xl font-bold text-slate-200 tracking-tight mt-1">
           {mode === 'signin' && 'Sign in to your account'}
           {mode === 'signup' && 'Register student or faculty account'}
           {mode === 'forgot' && 'Reset your password'}
         </h2>
-        <p className="mt-2 text-xs text-slate-400">
-          Official academic portal for students, faculty instructors, and administrators.
+        <p className="mt-1.5 text-xs text-slate-400">
+          Official academic evaluation portal for students, faculty, and administrators.
         </p>
       </div>
 
       {/* Main Card */}
-      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-lg px-4">
+      <div className="mt-6 sm:mx-auto sm:w-full sm:max-w-lg px-4">
         <div className="bg-slate-900/90 backdrop-blur-md py-8 px-6 sm:px-10 shadow-2xl rounded-2xl border border-blue-900/50">
           
+          {/* Institutional Official Logo at Top of Sign-In Form */}
+          <div className="flex flex-col items-center justify-center mb-6 text-center">
+            <img 
+              src="/logo.png" 
+              alt="St. Alexius College Official Logo" 
+              className="w-20 h-20 object-contain drop-shadow-lg hover:scale-105 transition-transform duration-200"
+              referrerPolicy="no-referrer" 
+            />
+            <div className="mt-2.5">
+              <span className="text-xs font-extrabold text-amber-400 uppercase tracking-wider">
+                St. Alexius College
+              </span>
+              <p className="text-[11px] text-slate-400">
+                Institutional Authentication Gateway
+              </p>
+            </div>
+          </div>
+
           {/* Mode Tabs */}
           <div className="flex border-b border-slate-800 mb-6">
             <button
@@ -446,48 +426,6 @@ export const Login: React.FC = () => {
                   />
                 </svg>
                 <span>Institutional Google Account</span>
-              </button>
-            </div>
-          </div>
-
-          {/* Quick Access Test / Demo Roles */}
-          <div className="mt-8 pt-6 border-t border-slate-800">
-            <div className="flex items-center space-x-2 mb-3">
-              <Sparkles className="w-4 h-4 text-amber-400" />
-              <span className="text-xs font-semibold text-slate-300 uppercase tracking-wider">
-                Instant Portal Access (Demo Roles)
-              </span>
-            </div>
-            <p className="text-[11px] text-slate-400 mb-3 leading-relaxed">
-              Explore the system instantly with pre-configured institutional profiles:
-            </p>
-            <div className="grid grid-cols-3 gap-2">
-              <button
-                type="button"
-                onClick={() => handleQuickDemo('student')}
-                disabled={submitting}
-                className="p-2.5 bg-blue-950/40 hover:bg-blue-900/60 border border-blue-800/50 rounded-xl text-center text-xs font-medium text-blue-200 transition flex flex-col items-center gap-1"
-              >
-                <BookOpen className="w-4 h-4 text-blue-400" />
-                <span className="font-semibold">Student</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => handleQuickDemo('teacher')}
-                disabled={submitting}
-                className="p-2.5 bg-purple-950/40 hover:bg-purple-900/60 border border-purple-800/50 rounded-xl text-center text-xs font-medium text-purple-200 transition flex flex-col items-center gap-1"
-              >
-                <Building2 className="w-4 h-4 text-purple-400" />
-                <span className="font-semibold">Faculty</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => handleQuickDemo('admin')}
-                disabled={submitting}
-                className="p-2.5 bg-amber-950/40 hover:bg-amber-900/60 border border-amber-800/50 rounded-xl text-center text-xs font-medium text-amber-200 transition flex flex-col items-center gap-1"
-              >
-                <ShieldCheck className="w-4 h-4 text-amber-400" />
-                <span className="font-semibold">Super Admin</span>
               </button>
             </div>
           </div>

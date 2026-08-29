@@ -15,6 +15,7 @@ import { useNavigate } from 'react-router-dom';
 import { PortalOnboardingTour } from '../../components/common/PortalOnboardingTour';
 import { PredictiveSearchBar } from '../../components/student/PredictiveSearchBar';
 import { GuidanceOfficeCard } from '../../components/common/GuidanceOfficeCard';
+import { getStoredDepartments, subscribeToDepartments } from '../../lib/departments';
 
 export const StudentDashboard: React.FC = () => {
   const { user, updateUserProfile } = useAuth();
@@ -47,16 +48,7 @@ export const StudentDashboard: React.FC = () => {
   // Item 3 & 6: Receipt & Guidelines Modal State
   const [selectedReceipt, setSelectedReceipt] = useState<{ teacher: any; evalDoc: any } | null>(null);
   const [showGuidelinesModal, setShowGuidelinesModal] = useState(false);
-  const [availableColleges, setAvailableColleges] = useState<string[]>([
-    'College of Nursing',
-    'College of Information Technology',
-    'College of Engineering',
-    'College of Education',
-    'College of Business Administration',
-    'College of Criminology',
-    'College of Arts & Sciences',
-    'College of Allied Health Sciences'
-  ]);
+  const [availableColleges, setAvailableColleges] = useState<string[]>(() => getStoredDepartments());
 
   // Verification Profile & ID Upload Modal State
   const [studentUserData, setStudentUserData] = useState<any>(null);
@@ -69,13 +61,12 @@ export const StudentDashboard: React.FC = () => {
   useEffect(() => {
     if (!user) return;
 
-    const unsubDept = onSnapshot(doc(db, 'settings', 'departments'), (snap) => {
-      if (snap.exists() && snap.data().items?.length) {
-        const collegesList = snap.data().items;
+    const unsubDept = subscribeToDepartments((collegesList) => {
+      if (collegesList && collegesList.length > 0) {
         setAvailableColleges(collegesList);
         setSelectedCollegeInput(prev => prev || collegesList[0]);
       }
-    }, (err) => console.warn("Departments snapshot listener info:", err));
+    });
 
     // 2. Real-time subscription to student profile
     let unsubUser = () => {};

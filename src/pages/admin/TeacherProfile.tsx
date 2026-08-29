@@ -26,15 +26,54 @@ export const TeacherProfile: React.FC = () => {
         }
 
         // Fetch teacher details
-        const teacherDoc = await getDoc(doc(db, 'users', teacherId));
-        if (teacherDoc.exists()) {
-          setTeacher({ id: teacherDoc.id, ...teacherDoc.data() });
+        let foundTeacher: any = null;
+        try {
+          const teacherDoc = await getDoc(doc(db, 'users', teacherId));
+          if (teacherDoc.exists()) {
+            foundTeacher = { id: teacherDoc.id, ...teacherDoc.data() };
+          }
+        } catch (tErr) {
+          console.warn("Firestore teacher fetch error, checking local storage:", tErr);
+        }
+
+        if (!foundTeacher) {
+          try {
+            const localTeachers = JSON.parse(localStorage.getItem('sac_local_teachers') || '{}');
+            if (localTeachers[teacherId]) {
+              foundTeacher = { id: teacherId, ...localTeachers[teacherId] };
+            }
+          } catch (e) {
+            console.warn("Local storage teacher lookup error:", e);
+          }
+        }
+
+        if (foundTeacher) {
+          setTeacher(foundTeacher);
         }
 
         // Fetch evaluations
-        const evalsQuery = query(collection(db, 'evaluations'), where('teacherId', '==', teacherId));
-        const evalsSnap = await getDocs(evalsQuery);
-        setEvaluations(evalsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+        let allEvals: any[] = [];
+        try {
+          const evalsQuery = query(collection(db, 'evaluations'), where('teacherId', '==', teacherId));
+          const evalsSnap = await getDocs(evalsQuery);
+          allEvals = evalsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        } catch (eErr) {
+          console.warn("Firestore evals fetch error, checking local storage:", eErr);
+        }
+
+        // Merge local evaluations
+        try {
+          const localEvals = JSON.parse(localStorage.getItem('sac_local_evaluations') || '{}');
+          Object.values(localEvals).forEach((ev: any) => {
+            if (ev.teacherId === teacherId && !allEvals.some(x => x.id === ev.id)) {
+              allEvals.push(ev);
+            }
+          });
+        } catch (e) {
+          console.warn("Local evals error:", e);
+        }
+
+        setEvaluations(allEvals);
 
         // Fetch faculty self-reflection
         const refDoc = await getDoc(doc(db, 'reflections', teacherId));
