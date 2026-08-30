@@ -1,10 +1,10 @@
 import { createClient, Client } from '@libsql/client/web';
 
-const databaseUrl = import.meta.env.VITE_TURSO_DATABASE_URL || 'libsql://stalexius-tpes-sade.aws-ap-northeast-1.turso.io';
+const databaseUrl = (import.meta.env.VITE_TURSO_DATABASE_URL || '').trim();
 const authToken = (import.meta.env.VITE_TURSO_AUTH_TOKEN || '').trim();
 
 export const isTursoConfigured = (): boolean => {
-  return Boolean(authToken && authToken.length > 20);
+  return Boolean(databaseUrl && authToken && authToken.length > 20);
 };
 
 let clientInstance: Client | null = null;

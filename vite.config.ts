@@ -8,7 +8,7 @@ export default defineConfig(({ mode }) => {
   const env = { ...process.env, ...loadEnv(mode, process.cwd(), '') };
 
   // Explicit constants for Firebase and Turso configuration
-  const TURSO_DATABASE_URL = env.VITE_TURSO_DATABASE_URL || 'libsql://stalexius-tpes-sade.aws-ap-northeast-1.turso.io';
+  const TURSO_DATABASE_URL = env.VITE_TURSO_DATABASE_URL || '';
   const TURSO_AUTH_TOKEN = env.VITE_TURSO_AUTH_TOKEN || '';
 
   const FIREBASE_API_KEY = env.VITE_FIREBASE_API_KEY || 'AIzaSyA96ndEVo6VtkuR6hiq06MxY0fUjc4FkDM';
