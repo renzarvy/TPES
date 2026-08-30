@@ -57,6 +57,16 @@ export const ActivityLog: React.FC<ActivityLogProps> = ({ maxItems = 200, classN
         });
       });
 
+      // Merge local demo audit logs
+      try {
+        const localAuditLogs: any[] = JSON.parse(localStorage.getItem('sac_local_audit_logs') || '[]');
+        localAuditLogs.forEach((item: any) => {
+          if (!fetchedLogs.some(l => l.id === item.id)) {
+            fetchedLogs.push(item);
+          }
+        });
+      } catch {}
+
       // Sort descending by timestamp / createdAt
       fetchedLogs.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
       

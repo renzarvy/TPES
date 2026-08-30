@@ -8,8 +8,11 @@ import {
   Settings, 
   ShieldCheck, 
   Crown,
-  ChevronRight
+  ChevronRight,
+  Activity
 } from 'lucide-react';
+import { ServiceDiagnosticsModal } from './common/ServiceDiagnostics';
+import { RoleDemoSwitcher } from './common/RoleDemoSwitcher';
 
 export const TopNavbar: React.FC = () => {
   const { user, role } = useAuth();
@@ -35,7 +38,7 @@ export const TopNavbar: React.FC = () => {
 
   return (
     <header className="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-xs print:hidden">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex flex-col md:flex-row md:items-center justify-between gap-3">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2.5 flex flex-col md:flex-row md:items-center justify-between gap-3">
         {/* Left: Section Breadcrumb & Active Page Badge */}
         <div className="flex items-center space-x-3">
           <div className="flex items-center text-xs font-semibold text-slate-500">
@@ -78,28 +81,37 @@ export const TopNavbar: React.FC = () => {
           })}
         </div>
 
-        {/* Right: User Quick Badge */}
-        <div className="hidden lg:flex items-center space-x-2 pl-3 border-l border-slate-200">
-          <img
-            src={user.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.displayName || user.email || 'Admin')}&background=0F172A&color=fff`}
-            alt="User Avatar"
-            className="w-7 h-7 rounded-full border border-slate-300 object-cover flex-shrink-0"
-            referrerPolicy="no-referrer"
+        {/* Right: Demo Switcher, Diagnostics & User Quick Badge */}
+        <div className="flex items-center space-x-2">
+          {/* Quick 1-Click Role Switcher */}
+          <RoleDemoSwitcher compact={true} />
+
+          <ServiceDiagnosticsModal
+            triggerButtonClassName="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 transition cursor-pointer"
           />
-          <div className="text-left text-[11px] leading-tight">
-            <div className="flex items-center space-x-1">
-              <span className="font-bold text-slate-900 truncate max-w-[130px]">
-                {user.displayName || user.email?.split('@')[0] || 'Admin User'}
-              </span>
-              {isSuperAdmin && (
-                <span title="Super Administrator">
-                  <Crown className="w-3 h-3 text-amber-500 flex-shrink-0" />
+
+          <div className="hidden lg:flex items-center space-x-2 pl-2.5 border-l border-slate-200">
+            <img
+              src={user.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.displayName || user.email || 'Admin')}&background=0F172A&color=fff`}
+              alt="User Avatar"
+              className="w-7 h-7 rounded-full border border-slate-300 object-cover flex-shrink-0"
+              referrerPolicy="no-referrer"
+            />
+            <div className="text-left text-[11px] leading-tight">
+              <div className="flex items-center space-x-1">
+                <span className="font-bold text-slate-900 truncate max-w-[130px]">
+                  {user.displayName || user.email?.split('@')[0] || 'Admin User'}
                 </span>
-              )}
+                {isSuperAdmin && (
+                  <span title="Super Administrator">
+                    <Crown className="w-3 h-3 text-amber-500 flex-shrink-0" />
+                  </span>
+                )}
+              </div>
+              <span className="text-[10px] text-slate-500 font-mono truncate max-w-[140px] block">
+                {user.email}
+              </span>
             </div>
-            <span className="text-[10px] text-slate-500 font-mono truncate max-w-[140px] block">
-              {user.email}
-            </span>
           </div>
         </div>
       </div>

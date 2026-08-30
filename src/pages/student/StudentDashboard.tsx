@@ -9,16 +9,18 @@ import {
   UserCircle, ArrowRight, Clock, ShieldAlert, CheckCircle2, Award, Sparkles, 
   Building2, Edit3, Save, Search, Filter, FileText, Printer, HelpCircle, X, Check, Eye,
   ShieldCheck, IdCard, Camera, Upload, Trash2, ZoomIn, AlertCircle, Lock,
-  History, Calendar, Star, MessageSquare, Compass, Building
+  History, Calendar, Star, MessageSquare, Compass, Building, Database
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { PortalOnboardingTour } from '../../components/common/PortalOnboardingTour';
 import { PredictiveSearchBar } from '../../components/student/PredictiveSearchBar';
 import { GuidanceOfficeCard } from '../../components/common/GuidanceOfficeCard';
 import { getStoredDepartments, subscribeToDepartments } from '../../lib/departments';
+import { RoleDemoSwitcher } from '../../components/common/RoleDemoSwitcher';
+import { DEMO_FACULTY_MEMBERS, seedDemoDataToStorage, isDemoDataSeeded } from '../../lib/demoReportsData';
 
 export const StudentDashboard: React.FC = () => {
-  const { user, updateUserProfile } = useAuth();
+  const { user, userProfile, updateUserProfile } = useAuth();
   const navigate = useNavigate();
   const [teachers, setTeachers] = useState<any[]>([]);
   const [evaluatedTeacherIds, setEvaluatedTeacherIds] = useState<Set<string>>(new Set());
@@ -300,6 +302,20 @@ export const StudentDashboard: React.FC = () => {
         } catch (lsErr) {
           console.warn("Local storage teachers notice in StudentDashboard:", lsErr);
         }
+
+        // If still empty or in demo mode, populate with DEMO_FACULTY_MEMBERS
+        if (teachersList.length === 0) {
+          if (!isDemoDataSeeded()) {
+            seedDemoDataToStorage();
+          }
+          DEMO_FACULTY_MEMBERS.forEach(f => {
+            teachersList.push({
+              ...f,
+              verificationStatus: 'approved',
+              isVerifiedStudent: true
+            });
+          });
+        }
         
         setTeachers(teachersList);
 
@@ -326,7 +342,10 @@ export const StudentDashboard: React.FC = () => {
           try {
             const localEvals = JSON.parse(localStorage.getItem('sac_local_evaluations') || '{}');
             Object.values(localEvals).forEach((locEval: any) => {
-              if (locEval.actualStudentId === user.uid && locEval.teacherId) {
+              const isOwner = locEval.actualStudentId === user.uid || 
+                ((user.email === 'student@stalexiuscollege.edu.ph' || userProfile?.studentId === '2024-10294') && (locEval.actualStudentId === 'student-demo-uid' || locEval.studentId === '2024-10294'));
+              
+              if (isOwner && locEval.teacherId) {
                 evaluatedIds.add(locEval.teacherId);
                 if (!evalsMap[locEval.teacherId]) {
                   evalsMap[locEval.teacherId] = locEval;
@@ -539,6 +558,9 @@ export const StudentDashboard: React.FC = () => {
 
   return (
     <div className="space-y-6">
+      {/* Role Demo Simulator Switcher */}
+      <RoleDemoSwitcher className="mb-2" />
+
       {/* Onboarding Tour for Students */}
       <PortalOnboardingTour
         role="student"

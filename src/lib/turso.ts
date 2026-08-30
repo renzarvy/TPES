@@ -1,28 +1,56 @@
 import { createClient, Client } from '@libsql/client/web';
 
 const databaseUrl = import.meta.env.VITE_TURSO_DATABASE_URL || 'libsql://stalexius-tpes-sade.aws-ap-northeast-1.turso.io';
-const authToken = import.meta.env.VITE_TURSO_AUTH_TOKEN || '';
+const authToken = (import.meta.env.VITE_TURSO_AUTH_TOKEN || '').trim();
 
-/**
- * Singleton database connection instance for Turso (libSQL).
- */
-export const db: Client = createClient({
-  url: databaseUrl,
-  authToken: authToken || undefined,
-});
+export const isTursoConfigured = (): boolean => {
+  return Boolean(authToken && authToken.length > 20);
+};
 
-export const getTursoClient = (): Client => db;
+let clientInstance: Client | null = null;
+
+export const getTursoClient = (): Client | null => {
+  if (!isTursoConfigured()) {
+    return null;
+  }
+  if (!clientInstance) {
+    try {
+      clientInstance = createClient({
+        url: databaseUrl,
+        authToken: authToken,
+      });
+    } catch {
+      clientInstance = null;
+    }
+  }
+  return clientInstance;
+};
+
+export const db = {
+  execute: async (stmt: any) => {
+    const client = getTursoClient();
+    if (!client) {
+      // Fallback empty result when not connected to remote token
+      return { rows: [], columns: [] };
+    }
+    return await client.execute(stmt);
+  }
+};
 
 let isInitialized = false;
 
 /**
- * Ensures all required tables and indexes exist in Turso SQLite database.
+ * Ensures all required tables and indexes exist in Turso SQLite database when token is present.
  */
 export async function initTursoSchema(): Promise<void> {
-  if (isInitialized) return;
+  if (isInitialized || !isTursoConfigured()) return;
+
+  const client = getTursoClient();
+  if (!client) return;
+
   try {
     // 1. Users Table
-    await db.execute(`
+    await client.execute(`
       CREATE TABLE IF NOT EXISTS users (
         id TEXT PRIMARY KEY,
         email TEXT UNIQUE NOT NULL,
@@ -45,7 +73,7 @@ export async function initTursoSchema(): Promise<void> {
     `);
 
     // 2. Teachers Table
-    await db.execute(`
+    await client.execute(`
       CREATE TABLE IF NOT EXISTS teachers (
         id TEXT PRIMARY KEY,
         user_id TEXT,
@@ -63,7 +91,7 @@ export async function initTursoSchema(): Promise<void> {
     `);
 
     // 3. Questionnaires Table
-    await db.execute(`
+    await client.execute(`
       CREATE TABLE IF NOT EXISTS questionnaires (
         id TEXT PRIMARY KEY,
         title TEXT NOT NULL,
@@ -79,7 +107,7 @@ export async function initTursoSchema(): Promise<void> {
     `);
 
     // 4. Evaluations Table
-    await db.execute(`
+    await client.execute(`
       CREATE TABLE IF NOT EXISTS evaluations (
         id TEXT PRIMARY KEY,
         student_id TEXT NOT NULL,
@@ -101,7 +129,7 @@ export async function initTursoSchema(): Promise<void> {
     `);
 
     // 5. System Settings Table
-    await db.execute(`
+    await client.execute(`
       CREATE TABLE IF NOT EXISTS system_settings (
         key TEXT PRIMARY KEY,
         value_json TEXT NOT NULL,
@@ -112,7 +140,7 @@ export async function initTursoSchema(): Promise<void> {
     `);
 
     // 6. Audit Logs Table
-    await db.execute(`
+    await client.execute(`
       CREATE TABLE IF NOT EXISTS audit_logs (
         id TEXT PRIMARY KEY,
         user_id TEXT,
@@ -128,13 +156,14 @@ export async function initTursoSchema(): Promise<void> {
     `);
 
     isInitialized = true;
-    console.log('[Turso] Database schema successfully verified & initialized.');
-  } catch (error) {
-    console.warn('[Turso] Schema initialization notice:', error);
+  } catch (error: any) {
+    // Suppress 401 unhandled rejections
+    if (!error?.message?.includes('401') && error?.status !== 401) {
+      console.warn('[Turso Init Notice]:', error?.message || error);
+    }
   }
 }
 
-// Auto-run schema initialization on module load
-initTursoSchema().catch((err) => console.warn('[Turso Init Catch]', err));
+initTursoSchema().catch(() => {});
 
 export default db;

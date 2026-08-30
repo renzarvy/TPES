@@ -10,6 +10,7 @@ import { QuickStats } from '../../components/admin/QuickStats';
 import { ActivityLog } from '../../components/ActivityLog';
 import { DashboardSkeleton } from '../../components/DashboardSkeleton';
 import { getStoredDepartments, subscribeToDepartments } from '../../lib/departments';
+import { RoleDemoSwitcher } from '../../components/common/RoleDemoSwitcher';
 
 export const AdminDashboard: React.FC = () => {
   const navigate = useNavigate();
@@ -256,6 +257,9 @@ export const AdminDashboard: React.FC = () => {
 
   return (
     <div className="space-y-6">
+      {/* Interactive Role Switcher Banner */}
+      <RoleDemoSwitcher className="mb-2" />
+
       {/* Dashboard Title Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-gray-100 animate-fade-in-up">
         <div>

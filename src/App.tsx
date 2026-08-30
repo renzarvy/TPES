@@ -1,6 +1,8 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { LoadingProvider } from './contexts/LoadingContext';
+import { ToastProvider } from './contexts/ToastContext';
 import { useRoleAuth } from './hooks/useRoleAuth';
 import { Layout } from './components/Layout';
 import { HomePage } from './pages/HomePage';
@@ -20,6 +22,7 @@ import { AccessDenied } from './components/AccessDenied';
 import { StatusNotice } from './pages/student/StatusNotice';
 import { StudentRegistrationPortal } from './components/student/StudentRegistrationPortal';
 import { StudentVerificationManager } from './components/admin/StudentVerificationManager';
+import { ensureMasterDemoDataSeeded } from './lib/demoReportsData';
 
 // Router for dashboard content based on authenticated role
 export const DashboardRoleRouter = () => {
@@ -93,89 +96,97 @@ const MainEntryRouter = () => {
 };
 
 function App() {
+  React.useEffect(() => {
+    ensureMasterDemoDataSeeded();
+  }, []);
+
   return (
-    <AuthProvider>
-      <Router>
-        <Routes>
-          <Route path="/" element={<MainEntryRouter />} />
-          <Route path="/home" element={<HomePage />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/access-denied" element={<AccessDenied />} />
-          
-          <Route element={<Layout />}>
-            <Route path="dashboard" element={<DashboardRoleRouter />} />
-            <Route 
-              path="evaluate/:teacherId" 
-              element={
-                <RoleGuard allowedRoles={['student', 'admin']} requireVerification={true}>
-                  <EvaluationForm />
-                </RoleGuard>
-              } 
-            />
-            <Route path="verification-status" element={<StatusNotice />} />
-            <Route path="portal" element={<div className="max-w-4xl mx-auto py-6 px-4"><StudentRegistrationPortal /></div>} />
-            <Route 
-              path="verifications" 
-              element={
-                <RoleGuard allowedRoles={['admin']}>
-                  <div className="max-w-7xl mx-auto py-6 px-4"><StudentVerificationManager /></div>
-                </RoleGuard>
-              } 
-            />
-            <Route 
-              path="reports" 
-              element={
-                <RoleGuard allowedRoles={['admin']}>
-                  <Reports />
-                </RoleGuard>
-              } 
-            />
-            <Route 
-              path="activity-log" 
-              element={
-                <RoleGuard allowedRoles={['admin']}>
-                  <AuditLogs />
-                </RoleGuard>
-              } 
-            />
-            <Route 
-              path="audit-logs" 
-              element={
-                <RoleGuard allowedRoles={['admin']}>
-                  <AuditLogs />
-                </RoleGuard>
-              } 
-            />
-            <Route 
-              path="teachers" 
-              element={
-                <RoleGuard allowedRoles={['admin']}>
-                  <Teachers />
-                </RoleGuard>
-              } 
-            />
-            <Route 
-              path="teacher/:teacherId" 
-              element={
-                <RoleGuard allowedRoles={['admin', 'teacher']}>
-                  <TeacherProfile />
-                </RoleGuard>
-              } 
-            />
-            <Route 
-              path="settings" 
-              element={
-                <RoleGuard allowedRoles={['admin']}>
-                  <Settings />
-                </RoleGuard>
-              } 
-            />
-          </Route>
-          
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </Router>
-    </AuthProvider>
+    <ToastProvider>
+      <LoadingProvider>
+        <AuthProvider>
+          <Router>
+            <Routes>
+              <Route path="/" element={<MainEntryRouter />} />
+              <Route path="/home" element={<HomePage />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/access-denied" element={<AccessDenied />} />
+              
+              <Route element={<Layout />}>
+                <Route path="dashboard" element={<DashboardRoleRouter />} />
+                <Route 
+                  path="evaluate/:teacherId" 
+                  element={
+                    <RoleGuard allowedRoles={['student', 'admin']} requireVerification={true}>
+                      <EvaluationForm />
+                    </RoleGuard>
+                  } 
+                />
+                <Route path="verification-status" element={<StatusNotice />} />
+                <Route path="portal" element={<div className="max-w-4xl mx-auto py-6 px-4"><StudentRegistrationPortal /></div>} />
+                <Route 
+                  path="verifications" 
+                  element={
+                    <RoleGuard allowedRoles={['admin']}>
+                      <div className="max-w-7xl mx-auto py-6 px-4"><StudentVerificationManager /></div>
+                    </RoleGuard>
+                  } 
+                />
+                <Route 
+                  path="reports" 
+                  element={
+                    <RoleGuard allowedRoles={['admin']}>
+                      <Reports />
+                    </RoleGuard>
+                  } 
+                />
+                <Route 
+                  path="activity-log" 
+                  element={
+                    <RoleGuard allowedRoles={['admin']}>
+                      <AuditLogs />
+                    </RoleGuard>
+                  } 
+                />
+                <Route 
+                  path="audit-logs" 
+                  element={
+                    <RoleGuard allowedRoles={['admin']}>
+                      <AuditLogs />
+                    </RoleGuard>
+                  } 
+                />
+                <Route 
+                  path="teachers" 
+                  element={
+                    <RoleGuard allowedRoles={['admin']}>
+                      <Teachers />
+                    </RoleGuard>
+                  } 
+                />
+                <Route 
+                  path="teacher/:teacherId" 
+                  element={
+                    <RoleGuard allowedRoles={['admin', 'teacher']}>
+                      <TeacherProfile />
+                    </RoleGuard>
+                  } 
+                />
+                <Route 
+                  path="settings" 
+                  element={
+                    <RoleGuard allowedRoles={['admin']}>
+                      <Settings />
+                    </RoleGuard>
+                  } 
+                />
+              </Route>
+              
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </Router>
+        </AuthProvider>
+      </LoadingProvider>
+    </ToastProvider>
   );
 }
 

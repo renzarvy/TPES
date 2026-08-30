@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth, UserRole } from '../contexts/AuthContext';
+import { seedDemoDataToStorage, isDemoDataSeeded } from '../lib/demoReportsData';
 import { 
   LogOut, 
   LayoutDashboard, 
@@ -30,7 +31,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   isCollapsed,
   setIsCollapsed
 }) => {
-  const { user, role, actualRole, logOut, setRole } = useAuth();
+  const { user, role, actualRole, logOut, setRole, signInWithEmergencySession } = useAuth();
   const location = useLocation();
 
   const userEmail = (user?.email || '').toLowerCase().trim();
@@ -151,6 +152,58 @@ export const Sidebar: React.FC<SidebarProps> = ({
               </Link>
             );
           })}
+
+          {/* Quick Demo Switcher in Sidebar */}
+          {!isCollapsed && (
+            <div className="pt-3 mt-3 border-t border-blue-800/40">
+              <div className="px-3 pb-2 text-[10px] font-extrabold uppercase tracking-widest text-amber-300/90 flex items-center justify-between">
+                <span>Role Switcher</span>
+                <span className="text-[9px] font-normal text-blue-300/70">Demo</span>
+              </div>
+              <div className="grid grid-cols-2 gap-1.5 px-1">
+                <button
+                  type="button"
+                  onClick={async () => {
+                    if (!isDemoDataSeeded()) seedDemoDataToStorage();
+                    await signInWithEmergencySession('admin@stalexiuscollege.edu.ph', 'admin', 'Dr. Alexius Admin', { department: 'Institutional Administration' });
+                  }}
+                  className="px-2 py-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/20 text-amber-300 text-[10px] font-bold text-center transition cursor-pointer"
+                >
+                  Admin
+                </button>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    if (!isDemoDataSeeded()) seedDemoDataToStorage();
+                    await signInWithEmergencySession('dean.nursing@stalexiuscollege.edu.ph', 'admin', 'Dean Arthur Reyes, RN, PhD', { department: 'College of Nursing' });
+                  }}
+                  className="px-2 py-1.5 rounded-lg bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/20 text-purple-300 text-[10px] font-bold text-center transition cursor-pointer"
+                >
+                  Dean
+                </button>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    if (!isDemoDataSeeded()) seedDemoDataToStorage();
+                    await signInWithEmergencySession('maria.santos@stalexiuscollege.edu.ph', 'teacher', 'Prof. Maria Santos', { department: 'College of Nursing', employeeId: 'EMP-7012' });
+                  }}
+                  className="px-2 py-1.5 rounded-lg bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/20 text-blue-300 text-[10px] font-bold text-center transition cursor-pointer"
+                >
+                  Faculty
+                </button>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    if (!isDemoDataSeeded()) seedDemoDataToStorage();
+                    await signInWithEmergencySession('student@stalexiuscollege.edu.ph', 'student', 'Juan A. Dela Cruz', { department: 'College of Computer Studies', studentId: '2024-10294' });
+                  }}
+                  className="px-2 py-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 text-emerald-300 text-[10px] font-bold text-center transition cursor-pointer"
+                >
+                  Student
+                </button>
+              </div>
+            </div>
+          )}
         </nav>
 
         {/* Footer Account Section */}

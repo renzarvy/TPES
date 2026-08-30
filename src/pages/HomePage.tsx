@@ -35,8 +35,8 @@ export const HomePage: React.FC = () => {
             isEvalOpen: data.isEvaluationOpen !== false
           });
         }
-      } catch (err) {
-        console.warn("Settings fetch notice:", err);
+      } catch {
+        // Defaults safely to standard institutional academic period ('2025-2026', '1st Semester')
       }
     };
     fetchSettings();

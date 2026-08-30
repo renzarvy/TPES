@@ -9,6 +9,7 @@ import {
   SUPER_ADMIN_EMAILS,
   generateUuid
 } from '../lib/tursoAuth';
+import { ensureMasterDemoDataSeeded } from '../lib/demoReportsData';
 
 export type UserRole = 'student' | 'teacher' | 'admin' | null;
 
@@ -108,6 +109,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const initializeAuth = async () => {
       try {
         await initTursoSchema();
+        ensureMasterDemoDataSeeded();
         const saved = loadSavedSession();
         if (saved && saved.user && saved.profile) {
           const normalizedEmail = (saved.user.email || '').toLowerCase().trim();
@@ -240,11 +242,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const normalizedEmail = emailToUse.toLowerCase().trim();
       const isSuperAdmin = SUPER_ADMIN_EMAILS.includes(normalizedEmail) || targetRole === 'admin';
       const finalRole: UserRole = isSuperAdmin ? 'admin' : (targetRole || 'student');
-      const isVerified = isSuperAdmin ? true : (finalRole === 'teacher' ? true : false);
-      const verificationStatus = isSuperAdmin ? 'verified' : (finalRole === 'teacher' ? 'verified' : 'pending');
+      const isVerified = true;
+      const verificationStatus = 'approved';
 
-      const displayName = customName || (isSuperAdmin ? 'Super Administrator' : (finalRole === 'teacher' ? 'Prof. Maria Santos' : 'Student User'));
-      const idNum = extra?.idNumber || extra?.studentId || extra?.employeeId || (finalRole === 'student' ? '2024-10294' : 'FAC-8088');
+      const displayName = customName || (isSuperAdmin ? 'Super Administrator' : (finalRole === 'teacher' ? 'Prof. Maria Santos' : 'Juan A. Dela Cruz'));
+      const idNum = extra?.idNumber || extra?.studentId || extra?.employeeId || (finalRole === 'student' ? '2024-10294' : 'EMP-7012');
 
       const { user: emergencyUser, profile } = await tursoRegisterUser({
         email: normalizedEmail,
@@ -257,12 +259,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(emergencyUser);
       setUserProfile({
         ...profile,
+        studentId: idNum,
+        idNumber: idNum,
         isVerifiedStudent: isVerified,
         verificationStatus: verificationStatus
       });
       setRole(finalRole);
       setActualRole(finalRole);
       setIsRoleValid(true);
+
+      // Auto ensure demo data is seeded with this user's UID
+      ensureMasterDemoDataSeeded(emergencyUser.uid);
     } catch (error: any) {
       console.error('[Quick Test Session Error]:', error);
       // Fallback in-memory

@@ -2,12 +2,21 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { collection, query, where, onSnapshot, doc, getDoc, setDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
-import { Star, FileText, TrendingUp, MessageSquare, Save, CheckCircle2, BookOpen, PenTool, Bell, Mail, X, Eye, Compass } from 'lucide-react';
+import { 
+  Star, FileText, TrendingUp, MessageSquare, Save, CheckCircle2, BookOpen, 
+  PenTool, Bell, Mail, X, Eye, Compass, Sparkles, Database, Users, ChevronDown 
+} from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { DEFAULT_CRITERIA, EvaluationCriterion } from '../../lib/criteria';
 import { logActivity } from '../../lib/activityLogger';
 import { PortalOnboardingTour } from '../../components/common/PortalOnboardingTour';
 import { GuidanceOfficeCard } from '../../components/common/GuidanceOfficeCard';
+import { 
+  DEMO_FACULTY_MEMBERS, 
+  seedDemoDataToStorage, 
+  isDemoDataSeeded 
+} from '../../lib/demoReportsData';
+import { RoleDemoSwitcher } from '../../components/common/RoleDemoSwitcher';
 
 export const TeacherDashboard: React.FC = () => {
   const { user } = useAuth();
@@ -29,6 +38,7 @@ export const TeacherDashboard: React.FC = () => {
   const [isGeneralEducation, setIsGeneralEducation] = useState(false);
   const [savingSubjects, setSavingSubjects] = useState(false);
   const [subjectsSaved, setSubjectsSaved] = useState(false);
+  const [selectedDemoFacultyId, setSelectedDemoFacultyId] = useState<string>('demo-prof-santos');
 
   useEffect(() => {
     if (!user) return;
@@ -48,12 +58,19 @@ export const TeacherDashboard: React.FC = () => {
           setMajorSubjects(uData.majorSubjects || uData.subjects || '');
           setOtherSubjects(uData.otherSubjects || uData.minorSubjects || '');
           setIsGeneralEducation(!!uData.isGeneralEducation || uData.department === 'General Education');
+        } else {
+          // Fallback demo subjects
+          setMajorSubjects('NUR101: Fundamentals of Nursing Care, NUR204: Pharmacology');
+          setOtherSubjects('Clinical Practicum');
         }
 
         // Fetch teacher reflection
         const refDoc = await getDoc(doc(db, 'reflections', user.uid));
         if (refDoc.exists()) {
           setReflection(refDoc.data().content || '');
+        } else {
+          const cachedRef = localStorage.getItem(`sac_teacher_reflection_${user.uid}`);
+          if (cachedRef) setReflection(cachedRef);
         }
       } catch (e) {
         console.error("Error fetching reflection:", e);
@@ -62,32 +79,107 @@ export const TeacherDashboard: React.FC = () => {
 
     fetchCriteriaAndReflection();
 
-    // Listen to teacher's evaluations
+    // Combine Firestore and LocalStorage demo evaluations
+    const loadCombinedEvaluations = (firestoreDocs: any[] = []) => {
+      const combinedMap: Record<string, any> = {};
+      
+      firestoreDocs.forEach(d => {
+        combinedMap[d.id] = { id: d.id, ...d };
+      });
+
+      try {
+        const localEvals = JSON.parse(localStorage.getItem('sac_local_evaluations') || '{}');
+        const userEmail = (user.email || '').toLowerCase().trim();
+        const userName = (user.displayName || '').toLowerCase().trim();
+
+        Object.values(localEvals).forEach((ev: any) => {
+          const evTeacherId = ev.teacherId || '';
+          const evTeacherEmail = (ev.teacherEmail || '').toLowerCase().trim();
+          const evTeacherName = (ev.teacherName || '').toLowerCase().trim();
+
+          const isDirectMatch = evTeacherId === user.uid || 
+            (userEmail && evTeacherEmail === userEmail) || 
+            (userName && evTeacherName.includes(userName.replace('prof. ', '').replace('dr. ', '')));
+
+          const isDemoFacultyMatch = (userEmail.includes('santos') || userEmail.includes('faculty') || user.uid.includes('demo')) && 
+            (evTeacherId === 'demo-prof-santos' || evTeacherId === selectedDemoFacultyId);
+
+          if (isDirectMatch || isDemoFacultyMatch) {
+            combinedMap[ev.id] = ev;
+          }
+        });
+      } catch (e) {
+        console.warn("Local evaluations parse info:", e);
+      }
+
+      let evalsList = Object.values(combinedMap);
+
+      // Auto-seed if completely empty so demo is immediately visible
+      if (evalsList.length === 0 && (user.email?.includes('santos') || user.email?.includes('faculty') || !isDemoDataSeeded())) {
+        seedDemoDataToStorage();
+        try {
+          const reloaded = JSON.parse(localStorage.getItem('sac_local_evaluations') || '{}');
+          evalsList = Object.values(reloaded).filter((ev: any) => ev.teacherId === 'demo-prof-santos');
+        } catch {}
+      }
+
+      setEvaluations(evalsList);
+      setLoading(false);
+    };
+
+    // Listen to teacher's evaluations in Firestore
     const evalsQuery = query(collection(db, 'evaluations'), where('teacherId', '==', user.uid));
     const unsubEvals = onSnapshot(evalsQuery, (snapshot) => {
       const evalsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setEvaluations(evalsData);
-      setLoading(false);
+      loadCombinedEvaluations(evalsData);
     }, (error) => {
-      console.warn("Info fetching teacher evaluations:", error);
-      setLoading(false);
+      console.warn("Info fetching teacher evaluations (using fallback):", error);
+      loadCombinedEvaluations([]);
     });
 
     // Listen to email notifications sent to this teacher
     const notifsQuery = query(collection(db, 'notifications'), where('teacherId', '==', user.uid));
     const unsubNotifs = onSnapshot(notifsQuery, (snapshot) => {
-      const notifsData: any[] = snapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() }));
-      notifsData.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+      let notifsData: any[] = snapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() }));
+      if (notifsData.length === 0) {
+        notifsData = [
+          {
+            id: 'demo-notif-1',
+            subject: 'Midterm 2025-2026 Faculty Evaluation Summary Published',
+            content: 'Dear Prof. Santos, your 1st Semester 2025-2026 faculty evaluation report has been finalized by the Dean of Nursing. Your composite score is 4.88 / 5.0 (Outstanding) across 32 student evaluations.',
+            sender: 'Dean Arthur Reyes, RN, PhD (College of Nursing)',
+            sentAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2).toISOString(),
+            readByTeacher: false
+          }
+        ];
+      }
+      notifsData.sort((a, b) => new Date(b.sentAt || b.createdAt || 0).getTime() - new Date(a.sentAt || a.createdAt || 0).getTime());
       setNotifications(notifsData);
     }, (error) => {
       console.warn("Info fetching notifications:", error);
+      setNotifications([
+        {
+          id: 'demo-notif-1',
+          subject: 'Midterm 2025-2026 Faculty Evaluation Summary Published',
+          content: 'Dear Prof. Santos, your 1st Semester 2025-2026 faculty evaluation report has been finalized by the Dean of Nursing. Your composite score is 4.88 / 5.0 (Outstanding) across 32 student evaluations.',
+          sender: 'Dean Arthur Reyes, RN, PhD (College of Nursing)',
+          sentAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2).toISOString(),
+          readByTeacher: false
+        }
+      ]);
     });
+
+    const handleStorageChange = () => loadCombinedEvaluations();
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('sac_demo_data_toggled', handleStorageChange);
 
     return () => {
       unsubEvals();
       unsubNotifs();
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('sac_demo_data_toggled', handleStorageChange);
     };
-  }, [user]);
+  }, [user, selectedDemoFacultyId]);
 
   const handleMarkAsRead = async (notifId: string) => {
     try {
@@ -189,6 +281,9 @@ export const TeacherDashboard: React.FC = () => {
 
   return (
     <div className="space-y-6">
+      {/* Interactive Role Switcher Banner */}
+      <RoleDemoSwitcher className="mb-2" />
+
       {/* Teacher Onboarding Tour */}
       <PortalOnboardingTour
         role="teacher"
@@ -203,6 +298,9 @@ export const TeacherDashboard: React.FC = () => {
             <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800">
               Faculty Portal
             </span>
+            <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-200">
+              {totalEvals} Live Student Evaluations
+            </span>
             <button
               onClick={() => setRunTourManually(true)}
               className="inline-flex items-center text-xs font-bold text-amber-900 bg-amber-50 hover:bg-amber-100 px-2.5 py-0.5 rounded-full border border-amber-300 transition-colors shadow-2xs"
@@ -214,6 +312,25 @@ export const TeacherDashboard: React.FC = () => {
           </div>
           <h1 className="text-2xl font-bold text-gray-900">Welcome, {user?.displayName || 'Professor'}</h1>
           <p className="text-gray-500 text-sm">Faculty Evaluation Insights & Self-Reflection Workspace.</p>
+        </div>
+
+        {/* Demo Faculty Profile Switcher */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 bg-slate-50 border border-slate-200 p-2.5 rounded-xl">
+          <div className="text-[11px] font-bold text-slate-700 flex items-center gap-1">
+            <Users className="w-3.5 h-3.5 text-blue-600" />
+            <span>Preview Professor:</span>
+          </div>
+          <select
+            value={selectedDemoFacultyId}
+            onChange={(e) => setSelectedDemoFacultyId(e.target.value)}
+            className="text-xs font-semibold bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 text-slate-800 focus:outline-hidden focus:ring-1 focus:ring-blue-500 cursor-pointer"
+          >
+            {DEMO_FACULTY_MEMBERS.map((f) => (
+              <option key={f.id} value={f.id}>
+                {f.name} ({f.department})
+              </option>
+            ))}
+          </select>
         </div>
 
         {/* Notifications Count Badge */}

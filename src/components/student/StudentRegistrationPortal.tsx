@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
+import { useLoading } from '../../contexts/LoadingContext';
+import { useGlobalToast } from '../../contexts/ToastContext';
+import { parseAuthError } from '../../utils/authErrorParser';
 import { db, storage } from '../../lib/firebase';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
@@ -18,6 +21,7 @@ interface StudentRegistrationPortalProps {
 
 export const StudentRegistrationPortal: React.FC<StudentRegistrationPortalProps> = ({ onSuccess, compact = false }) => {
   const { user, userProfile, verificationStatus, isVerified, role, updateUserProfile } = useAuth();
+  const { showSuccess, showError, showWarning } = useGlobalToast();
   
   const isTeacher = role === 'teacher' || userProfile?.role === 'teacher';
   
@@ -261,6 +265,7 @@ export const StudentRegistrationPortal: React.FC<StudentRegistrationPortalProps>
 
       setUploadSuccess('Your registration request and ID credentials have been successfully queued for Administrator approval!');
       setShowSuccessToast(true);
+      showSuccess('Credentials Submitted', 'Your registration request and ID credentials have been queued for approval.');
       setSelectedFile(null);
       setCompressedBlob(null);
       setPreviewUrl('');
@@ -269,6 +274,7 @@ export const StudentRegistrationPortal: React.FC<StudentRegistrationPortalProps>
       }
     } catch (err: any) {
       console.warn('Submission notice:', err);
+      const parsed = parseAuthError(err);
       const isPermissionErr = 
         err?.message?.toLowerCase().includes('permission') || 
         err?.code === 'permission-denied' || 
@@ -288,6 +294,7 @@ export const StudentRegistrationPortal: React.FC<StudentRegistrationPortalProps>
         }
         setUploadSuccess('Your registration request and ID credentials have been successfully queued for Administrator approval!');
         setShowSuccessToast(true);
+        showSuccess('Credentials Saved', 'Your registration request is saved and queued for review.');
         setSelectedFile(null);
         setCompressedBlob(null);
         setPreviewUrl('');
@@ -295,7 +302,12 @@ export const StudentRegistrationPortal: React.FC<StudentRegistrationPortalProps>
           onSuccess();
         }
       } else {
-        setUploadError(err.message || 'Failed to submit identification credentials. Please verify your connection and try again.');
+        setUploadError(parsed.description);
+        if (parsed.isHttp401) {
+          showWarning(parsed.title, parsed.description);
+        } else {
+          showError(parsed.title, parsed.description);
+        }
       }
     } finally {
       setIsUploading(false);
