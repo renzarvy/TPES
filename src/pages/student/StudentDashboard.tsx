@@ -51,6 +51,15 @@ export const StudentDashboard: React.FC = () => {
   const [selectedReceipt, setSelectedReceipt] = useState<{ teacher: any; evalDoc: any } | null>(null);
   const [showGuidelinesModal, setShowGuidelinesModal] = useState(false);
   const [availableColleges, setAvailableColleges] = useState<string[]>(() => getStoredDepartments());
+  const [requiredEvaluationsCount, setRequiredEvaluationsCount] = useState<number>(() => {
+    try {
+      const stored = localStorage.getItem('sac_setting_requiredEvaluationsCount');
+      return stored ? parseInt(stored, 10) : 5;
+    } catch {
+      return 5;
+    }
+  });
+  const [requiredEvaluationsMode, setRequiredEvaluationsMode] = useState<'count' | 'all'>('count');
 
   // Verification Profile & ID Upload Modal State
   const [studentUserData, setStudentUserData] = useState<any>(null);
@@ -206,6 +215,13 @@ export const StudentDashboard: React.FC = () => {
           localStorage.setItem('app_setting_isAnonymous', JSON.stringify(anonVal));
         } catch {}
         
+        if (data.requiredEvaluationsCount !== undefined) {
+          setRequiredEvaluationsCount(Number(data.requiredEvaluationsCount) || 5);
+        }
+        if (data.requiredEvaluationsMode) {
+          setRequiredEvaluationsMode(data.requiredEvaluationsMode);
+        }
+
         const mode = data.evalMode || 'open';
         const collegeTargetMode = data.collegeTargetMode || 'all';
         const allowedColleges: string[] = data.allowedColleges || [];
@@ -534,7 +550,18 @@ export const StudentDashboard: React.FC = () => {
 
   const totalTeachers = eligibleTeachers.length;
   const evaluatedCount = eligibleTeachers.filter(t => evaluatedTeacherIds.has(t.id)).length;
-  const progressPercent = totalTeachers > 0 ? Math.round((evaluatedCount / totalTeachers) * 100) : 0;
+  
+  // Calculate target based on Admin requirement configuration
+  const targetRequiredCount = requiredEvaluationsMode === 'count' 
+    ? Math.max(1, requiredEvaluationsCount) 
+    : (totalTeachers || 1);
+
+  // Clearance status check
+  const isRequirementCleared = totalTeachers > 0 && evaluatedCount >= targetRequiredCount;
+  const progressPercent = targetRequiredCount > 0 
+    ? Math.min(100, Math.round((evaluatedCount / targetRequiredCount) * 100)) 
+    : 0;
+  const remainingCount = Math.max(0, targetRequiredCount - evaluatedCount);
 
   let currentVerificationStatus = studentUserData?.verificationStatus;
   if (!currentVerificationStatus) {
@@ -785,22 +812,37 @@ export const StudentDashboard: React.FC = () => {
               <Award className="w-6 h-6 text-[#d4af37]" />
             </div>
             <div>
-              <h2 className="text-lg font-bold">Your Evaluation Completion Progress</h2>
-              <p className="text-xs text-blue-200 mt-0.5">
-                {evaluatedCount} of {totalTeachers} faculty evaluations submitted for this term
+              <div className="flex items-center space-x-2 flex-wrap gap-y-1">
+                <h2 className="text-lg font-bold">Your Evaluation Completion Progress</h2>
+                {isRequirementCleared ? (
+                  <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-400/20 text-emerald-300 border border-emerald-400/40 flex items-center">
+                    <CheckCircle2 className="w-3 h-3 mr-1" /> Clearance Requirement Met
+                  </span>
+                ) : (
+                  <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-400/20 text-amber-300 border border-amber-400/40">
+                    {remainingCount} More Required for Clearance
+                  </span>
+                )}
+              </div>
+              <p className="text-xs text-blue-200 mt-1">
+                Completed {evaluatedCount} of {targetRequiredCount} required faculty evaluations ({evaluatedCount} submitted out of {totalTeachers} available).
               </p>
             </div>
           </div>
-          <div className="text-right">
+          <div className="text-right flex-shrink-0">
             <span className="text-3xl font-extrabold text-[#d4af37]">{progressPercent}%</span>
-            <span className="text-xs text-blue-200 block">Complete</span>
+            <span className="text-xs text-blue-200 block">
+              {isRequirementCleared ? 'Target Reached' : 'Progress'}
+            </span>
           </div>
         </div>
 
         {/* Progress Bar */}
         <div className="mt-4 w-full bg-blue-950/60 rounded-full h-3 overflow-hidden p-0.5 border border-blue-700/50">
           <div 
-            className="bg-[#d4af37] h-full rounded-full transition-all duration-500 ease-out" 
+            className={`h-full rounded-full transition-all duration-500 ease-out ${
+              isRequirementCleared ? 'bg-emerald-400' : 'bg-[#d4af37]'
+            }`} 
             style={{ width: `${progressPercent}%` }}
           />
         </div>

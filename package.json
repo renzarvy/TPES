@@ -5,6 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "vite --port=3000 --host=0.0.0.0",
+    "scan-secrets": "node scripts/scan-secrets.js",
+    "check-secrets": "node scripts/check-secrets.js",
+    "prebuild": "node scripts/check-secrets.js && node scripts/scan-secrets.js",
     "build": "vite build",
     "preview": "vite preview --port=3000 --host=0.0.0.0",
     "lint": "tsc --noEmit"

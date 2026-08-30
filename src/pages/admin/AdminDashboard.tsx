@@ -3,9 +3,10 @@ import { doc, getDoc, setDoc, collection, onSnapshot } from 'firebase/firestore'
 import { handleFirestoreError, OperationType } from '../../lib/firestoreErrorHandler';
 import { db } from '../../lib/firebase';
 import { useAuth } from '../../contexts/AuthContext';
-import { ShieldAlert, Users, FileText, CheckCircle, Calendar, Clock, CheckCircle2, ShieldCheck, AlertCircle } from 'lucide-react';
+import { ShieldAlert, Users, FileText, CheckCircle, Calendar, Clock, CheckCircle2, ShieldCheck, AlertCircle, Award, Sliders } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { StudentVerificationManager } from '../../components/admin/StudentVerificationManager';
+import { StudentEvaluationCompletionTracker } from '../../components/admin/StudentEvaluationCompletionTracker';
 import { QuickStats } from '../../components/admin/QuickStats';
 import { ActivityLog } from '../../components/ActivityLog';
 import { DashboardSkeleton } from '../../components/DashboardSkeleton';
@@ -22,6 +23,8 @@ export const AdminDashboard: React.FC = () => {
   const [collegeTargetMode, setCollegeTargetMode] = useState<'all' | 'selective'>('all');
   const [allowedColleges, setAllowedColleges] = useState<string[]>([]);
   const [availableColleges, setAvailableColleges] = useState<string[]>(() => getStoredDepartments());
+  const [requiredEvaluationsCount, setRequiredEvaluationsCount] = useState<number>(5);
+  const [requiredEvaluationsMode, setRequiredEvaluationsMode] = useState<'count' | 'all'>('count');
   const [stats, setStats] = useState({ teachers: 0, evaluations: 0, students: 0, pendingVerifications: 0 });
   const [recentTeachers, setRecentTeachers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -55,6 +58,12 @@ export const AdminDashboard: React.FC = () => {
         setEndDate(data.endDate || '');
         setCollegeTargetMode(data.collegeTargetMode || 'all');
         setAllowedColleges(data.allowedColleges || []);
+        if (data.requiredEvaluationsCount !== undefined) {
+          setRequiredEvaluationsCount(Number(data.requiredEvaluationsCount) || 5);
+        }
+        if (data.requiredEvaluationsMode) {
+          setRequiredEvaluationsMode(data.requiredEvaluationsMode);
+        }
       } else {
         // Initialize evaluation settings if missing
         setDoc(doc(db, 'settings', 'evaluation'), { 
@@ -63,7 +72,9 @@ export const AdminDashboard: React.FC = () => {
           startDate: '',
           endDate: '',
           collegeTargetMode: 'all',
-          allowedColleges: []
+          allowedColleges: [],
+          requiredEvaluationsCount: 5,
+          requiredEvaluationsMode: 'count'
         }, { merge: true }).catch(err => console.warn("Init evaluation settings info:", err));
       }
       setLoading(false);
@@ -232,12 +243,24 @@ export const AdminDashboard: React.FC = () => {
         startDate, 
         endDate,
         collegeTargetMode,
-        allowedColleges
+        allowedColleges,
+        requiredEvaluationsCount: Math.max(1, requiredEvaluationsCount),
+        requiredEvaluationsMode
       }, { merge: true });
-      alert("Evaluation schedule & college priority saved successfully!");
+
+      // Save locally & broadcast
+      try {
+        localStorage.setItem('sac_setting_requiredEvaluationsCount', requiredEvaluationsCount.toString());
+        localStorage.setItem('sac_setting_requiredEvaluationsMode', requiredEvaluationsMode);
+        window.dispatchEvent(new CustomEvent('app_setting_changed', { 
+          detail: { key: 'requiredEvaluationsCount', value: requiredEvaluationsCount } 
+        }));
+      } catch {}
+
+      alert("Evaluation schedule, target requirements & college priority saved successfully!");
     } catch (error) {
       console.warn("Firestore schedule save info:", error);
-      alert("Evaluation schedule & college priority updated!");
+      alert("Evaluation schedule & requirements updated locally!");
     } finally {
       setSavingSchedule(false);
     }
@@ -369,6 +392,11 @@ export const AdminDashboard: React.FC = () => {
             <FileText className="w-4 h-4 mr-1.5" /> Generate Full Report
           </button>
         </div>
+      </div>
+
+      {/* Real-Time Student Evaluation Completion & Clearance Tracker */}
+      <div className="animate-fade-in-up delay-300">
+        <StudentEvaluationCompletionTracker />
       </div>
 
       {/* Student Registrations & Verification Queue */}
@@ -617,13 +645,99 @@ export const AdminDashboard: React.FC = () => {
                 )}
               </div>
 
+              {/* Student Evaluation Requirement Target Input */}
+              <div className="pt-4 border-t border-gray-100 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <label className="text-sm font-semibold text-gray-900 block flex items-center gap-1.5">
+                      <Award className="w-4 h-4 text-[#1e3a8a]" /> Required Evaluations per Student
+                    </label>
+                    <p className="text-xs text-gray-500">
+                      Configure the minimum number of faculty evaluations required before a student is cleared.
+                    </p>
+                  </div>
+                  <span className="px-2.5 py-1 rounded-full bg-blue-50 text-[#1e3a8a] font-bold text-xs border border-blue-200">
+                    {requiredEvaluationsMode === 'count' ? `${requiredEvaluationsCount} Required` : 'All Faculty'}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                  <label className={`p-3 rounded-xl border cursor-pointer text-xs font-medium transition-all ${
+                    requiredEvaluationsMode === 'count' ? 'bg-blue-50/70 border-[#1e3a8a] text-blue-950 ring-1 ring-[#1e3a8a]' : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'
+                  }`}>
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="radio"
+                        name="requiredEvaluationsMode"
+                        value="count"
+                        checked={requiredEvaluationsMode === 'count'}
+                        onChange={() => setRequiredEvaluationsMode('count')}
+                        className="w-4 h-4 text-[#1e3a8a] border-gray-300 focus:ring-[#1e3a8a]"
+                      />
+                      <span className="font-bold">Fixed Target Count</span>
+                    </div>
+                    <p className="text-[11px] text-gray-500 mt-1 pl-6">Set specific target (e.g. 5 evaluations)</p>
+                  </label>
+
+                  <label className={`p-3 rounded-xl border cursor-pointer text-xs font-medium transition-all ${
+                    requiredEvaluationsMode === 'all' ? 'bg-blue-50/70 border-[#1e3a8a] text-blue-950 ring-1 ring-[#1e3a8a]' : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'
+                  }`}>
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="radio"
+                        name="requiredEvaluationsMode"
+                        value="all"
+                        checked={requiredEvaluationsMode === 'all'}
+                        onChange={() => setRequiredEvaluationsMode('all')}
+                        className="w-4 h-4 text-[#1e3a8a] border-gray-300 focus:ring-[#1e3a8a]"
+                      />
+                      <span className="font-bold">All Assigned Faculty</span>
+                    </div>
+                    <p className="text-[11px] text-gray-500 mt-1 pl-6">Require all department & gen-ed teachers</p>
+                  </label>
+                </div>
+
+                {requiredEvaluationsMode === 'count' && (
+                  <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between gap-4">
+                    <div>
+                      <span className="text-xs font-bold text-slate-800 block">Minimum Evaluation Count:</span>
+                      <span className="text-[11px] text-slate-500">Students will receive clearance after submitting this count.</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <button
+                        type="button"
+                        onClick={() => setRequiredEvaluationsCount(prev => Math.max(1, prev - 1))}
+                        className="w-8 h-8 rounded-lg bg-white border border-gray-300 hover:bg-gray-100 text-gray-800 font-bold flex items-center justify-center transition-colors"
+                      >
+                        -
+                      </button>
+                      <input
+                        type="number"
+                        min="1"
+                        max="20"
+                        value={requiredEvaluationsCount}
+                        onChange={(e) => setRequiredEvaluationsCount(Math.max(1, parseInt(e.target.value, 10) || 1))}
+                        className="w-16 text-center py-1 font-bold text-sm text-[#1e3a8a] bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1e3a8a] outline-hidden"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setRequiredEvaluationsCount(prev => Math.min(20, prev + 1))}
+                        className="w-8 h-8 rounded-lg bg-white border border-gray-300 hover:bg-gray-100 text-gray-800 font-bold flex items-center justify-center transition-colors"
+                      >
+                        +
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+
               <div className="pt-4 border-t border-gray-100">
                 <button
                   onClick={handleSaveSchedule}
                   disabled={savingSchedule}
                   className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-[#1e3a8a] hover:bg-blue-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
                 >
-                  {savingSchedule ? 'Saving...' : 'Save Schedule'}
+                  {savingSchedule ? 'Saving...' : 'Save Schedule & Requirements'}
                 </button>
               </div>
             </div>

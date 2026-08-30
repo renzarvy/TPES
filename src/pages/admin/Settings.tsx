@@ -3,7 +3,7 @@ import { doc, getDoc, setDoc, onSnapshot, collection, addDoc, serverTimestamp, q
 import { handleFirestoreError, OperationType } from '../../lib/firestoreErrorHandler';
 import { db } from '../../lib/firebase';
 import { useAuth } from '../../contexts/AuthContext';
-import { Settings as SettingsIcon, Save, Mail, Calendar, Bell, Plus, Trash2, Edit2, Check, ShieldAlert, Building2, ListChecks, X, History, Search, ShieldCheck, UserCheck, UserPlus, Shield, UserX } from 'lucide-react';
+import { Settings as SettingsIcon, Save, Mail, Calendar, Bell, Plus, Trash2, Edit2, Check, ShieldAlert, Building2, ListChecks, X, History, Search, ShieldCheck, UserCheck, UserPlus, Shield, UserX, Award, Sliders } from 'lucide-react';
 import { DEFAULT_CRITERIA, EvaluationCriterion } from '../../lib/criteria';
 import { getStoredDepartments, subscribeToDepartments, saveDepartmentsToStorage } from '../../lib/departments';
 import { ActivityLog } from '../../components/ActivityLog';
@@ -34,6 +34,8 @@ export const Settings: React.FC = () => {
     allowedDomain: 'stalexiuscollege.edu.ph',
     requireEmailVerification: true,
     emailNotifications: true,
+    requiredEvaluationsCount: 5,
+    requiredEvaluationsMode: 'count' as 'count' | 'all',
   });
 
   // Criteria management
@@ -79,6 +81,19 @@ export const Settings: React.FC = () => {
         const genDoc = await getDoc(doc(db, 'settings', 'general'));
         if (genDoc.exists()) {
           setSettings(prev => ({ ...prev, ...genDoc.data() }));
+        }
+
+        // Evaluation target settings
+        const evalDoc = await getDoc(doc(db, 'settings', 'evaluation'));
+        if (evalDoc.exists()) {
+          const evalData = evalDoc.data();
+          if (evalData.requiredEvaluationsCount !== undefined) {
+            setSettings(prev => ({ 
+              ...prev, 
+              requiredEvaluationsCount: Number(evalData.requiredEvaluationsCount) || 5,
+              requiredEvaluationsMode: evalData.requiredEvaluationsMode || 'count'
+            }));
+          }
         }
 
         // Criteria settings
@@ -301,6 +316,10 @@ export const Settings: React.FC = () => {
     try {
       try {
         await setDoc(doc(db, 'settings', 'general'), settings, { merge: true });
+        await setDoc(doc(db, 'settings', 'evaluation'), {
+          requiredEvaluationsCount: settings.requiredEvaluationsCount || 5,
+          requiredEvaluationsMode: settings.requiredEvaluationsMode || 'count'
+        }, { merge: true });
         await setDoc(doc(db, 'settings', 'criteria'), { items: criteria }, { merge: true });
         await setDoc(doc(db, 'settings', 'departments'), { items: departments }, { merge: true });
       } catch (dbErr) {
@@ -309,8 +328,14 @@ export const Settings: React.FC = () => {
 
       try {
         localStorage.setItem('sac_settings_general', JSON.stringify(settings));
+        localStorage.setItem('sac_setting_requiredEvaluationsCount', (settings.requiredEvaluationsCount || 5).toString());
+        localStorage.setItem('sac_setting_requiredEvaluationsMode', settings.requiredEvaluationsMode || 'count');
         localStorage.setItem('sac_settings_criteria', JSON.stringify(criteria));
         localStorage.setItem('sac_settings_departments', JSON.stringify(departments));
+        
+        window.dispatchEvent(new CustomEvent('app_setting_changed', {
+          detail: { key: 'requiredEvaluationsCount', value: settings.requiredEvaluationsCount || 5 }
+        }));
       } catch (lsErr) {
         console.warn("Local storage settings backup notice:", lsErr);
       }
@@ -463,6 +488,126 @@ export const Settings: React.FC = () => {
                 <option value="Summer">Summer</option>
               </select>
             </div>
+          </div>
+        </div>
+
+        {/* Student Evaluation Target & Clearance Requirements */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+          <div className="px-6 py-5 border-b border-gray-100 bg-gray-50/50 flex items-center justify-between">
+            <div className="flex items-center">
+              <Award className="w-5 h-5 text-[#1e3a8a] mr-2" />
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900">Student Evaluation Target & Clearance Policy</h2>
+                <p className="text-xs text-gray-500 mt-0.5">Define the mandatory number of faculty evaluations students must complete to receive official academic clearance.</p>
+              </div>
+            </div>
+            <span className="text-xs bg-emerald-100 text-emerald-800 font-bold px-3 py-1 rounded-full border border-emerald-200">
+              {settings.requiredEvaluationsMode === 'count' ? `${settings.requiredEvaluationsCount || 5} Required per Student` : 'All Assigned Faculty'}
+            </span>
+          </div>
+
+          <div className="p-6 space-y-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-900 mb-2">Clearance Completion Target Mode</label>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <label className={`p-4 rounded-xl border cursor-pointer transition-all ${
+                  settings.requiredEvaluationsMode === 'count'
+                    ? 'border-[#1e3a8a] bg-blue-50/60 ring-2 ring-[#1e3a8a]/20'
+                    : 'border-gray-200 hover:bg-gray-50'
+                }`}>
+                  <div className="flex items-center space-x-3">
+                    <input
+                      type="radio"
+                      name="settingsTargetMode"
+                      value="count"
+                      checked={settings.requiredEvaluationsMode === 'count'}
+                      onChange={() => setSettings({ ...settings, requiredEvaluationsMode: 'count' })}
+                      className="w-4 h-4 text-[#1e3a8a] border-gray-300 focus:ring-[#1e3a8a]"
+                    />
+                    <div>
+                      <p className="text-sm font-extrabold text-gray-900">Fixed Evaluation Count</p>
+                      <p className="text-xs text-gray-500 mt-0.5">Students must submit a specific minimum count (e.g. 5 faculty members)</p>
+                    </div>
+                  </div>
+                </label>
+
+                <label className={`p-4 rounded-xl border cursor-pointer transition-all ${
+                  settings.requiredEvaluationsMode === 'all'
+                    ? 'border-[#1e3a8a] bg-blue-50/60 ring-2 ring-[#1e3a8a]/20'
+                    : 'border-gray-200 hover:bg-gray-50'
+                }`}>
+                  <div className="flex items-center space-x-3">
+                    <input
+                      type="radio"
+                      name="settingsTargetMode"
+                      value="all"
+                      checked={settings.requiredEvaluationsMode === 'all'}
+                      onChange={() => setSettings({ ...settings, requiredEvaluationsMode: 'all' })}
+                      className="w-4 h-4 text-[#1e3a8a] border-gray-300 focus:ring-[#1e3a8a]"
+                    />
+                    <div>
+                      <p className="text-sm font-extrabold text-gray-900">All Assigned Faculty</p>
+                      <p className="text-xs text-gray-500 mt-0.5">Students must evaluate 100% of teachers in their course curriculum</p>
+                    </div>
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            {settings.requiredEvaluationsMode === 'count' && (
+              <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div>
+                    <label className="text-sm font-bold text-gray-900 block">Required Evaluations per Student</label>
+                    <p className="text-xs text-gray-500">The clearance certificate unlocks once a student reaches this number.</p>
+                  </div>
+
+                  <div className="flex items-center space-x-2">
+                    <button
+                      type="button"
+                      onClick={() => setSettings(prev => ({ ...prev, requiredEvaluationsCount: Math.max(1, (prev.requiredEvaluationsCount || 5) - 1) }))}
+                      className="w-9 h-9 rounded-lg bg-white border border-gray-300 hover:bg-gray-100 text-gray-800 font-black text-base flex items-center justify-center transition-colors shadow-2xs"
+                    >
+                      -
+                    </button>
+                    <input
+                      type="number"
+                      min="1"
+                      max="20"
+                      value={settings.requiredEvaluationsCount || 5}
+                      onChange={(e) => setSettings({ ...settings, requiredEvaluationsCount: Math.max(1, parseInt(e.target.value, 10) || 1) })}
+                      className="w-20 text-center py-1.5 text-base font-extrabold text-[#1e3a8a] bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1e3a8a] outline-hidden shadow-2xs"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setSettings(prev => ({ ...prev, requiredEvaluationsCount: Math.min(20, (prev.requiredEvaluationsCount || 5) + 1) }))}
+                      className="w-9 h-9 rounded-lg bg-white border border-gray-300 hover:bg-gray-100 text-gray-800 font-black text-base flex items-center justify-center transition-colors shadow-2xs"
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
+
+                {/* Quick Presets */}
+                <div className="flex items-center space-x-2 pt-1 border-t border-slate-200">
+                  <span className="text-xs text-gray-500 font-medium">Standard Presets:</span>
+                  {[3, 5, 8, 10].map(val => (
+                    <button
+                      key={val}
+                      type="button"
+                      onClick={() => setSettings({ ...settings, requiredEvaluationsCount: val })}
+                      className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
+                        settings.requiredEvaluationsCount === val
+                          ? 'bg-[#1e3a8a] text-white shadow-2xs'
+                          : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-100'
+                      }`}
+                    >
+                      {val} Evaluations
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
 

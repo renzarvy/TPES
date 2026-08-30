@@ -66,7 +66,7 @@ export class ErrorBoundary extends Component<Props, State> {
 
                 <div className="bg-slate-950/80 rounded-lg p-3 text-xs font-mono text-slate-300 border border-slate-800 overflow-x-auto">
                   <p className="text-slate-400 mb-1"># Add this to your .env file and rebuild:</p>
-                  <p className="text-emerald-400">VITE_FIREBASE_API_KEY=&quot;AIzaSy...&quot;</p>
+                  <p className="text-emerald-400">VITE_FIREBASE_API_KEY=&quot;your_api_key_here&quot;</p>
                   <p className="text-slate-300 mt-2 text-[11px]">npm run build && firebase deploy --only hosting</p>
                 </div>
               </div>
