@@ -77,6 +77,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
             onClick={() => setIsCollapsed(!isCollapsed)}
             className="hidden md:flex absolute right-3 top-3 p-1.5 bg-blue-900/60 hover:bg-blue-800 text-blue-200 hover:text-white rounded-lg border border-blue-700/50 transition-colors shadow-sm z-10"
             title={isCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
+            aria-label={isCollapsed ? "Expand sidebar navigation" : "Collapse sidebar navigation"}
+            aria-expanded={!isCollapsed}
           >
             {isCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
           </button>
@@ -86,6 +88,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             type="button"
             onClick={() => setIsMobileMenuOpen(false)}
             className="md:hidden absolute right-3 top-3 p-1.5 text-blue-200 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+            aria-label="Close navigation menu"
           >
             <X className="w-5 h-5" />
           </button>
@@ -95,14 +98,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <div className={`bg-white rounded-full flex items-center justify-center shadow-lg overflow-hidden transition-all duration-300 ${
               isCollapsed ? 'w-10 h-10 mb-1 border border-white/20' : 'w-16 h-16 mb-2 border border-white/20'
             }`}>
-              <img src="/logo.png" alt="St. Alexius College Logo" className="w-full h-full object-cover" />
+              <img src="/logo.png" alt="St. Alexius College Seal" className="w-full h-full object-cover" />
             </div>
 
             {!isCollapsed && (
               <div className="animate-fade-in w-full px-2">
-                <h1 className="text-xs font-black tracking-widest text-amber-300 uppercase drop-shadow-sm truncate">
+                <span className="text-xs font-black tracking-widest text-amber-300 uppercase drop-shadow-sm truncate block">
                   ST. ALEXIUS COLLEGE
-                </h1>
+                </span>
                 <p className="text-[10px] text-blue-200 mt-0.5 font-medium tracking-wide truncate">
                   Faculty Evaluation Portal
                 </p>
@@ -115,7 +118,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
 
         {/* Navigation Items */}
-        <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+        <nav aria-label="Main Sidebar Navigation" className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
           {!isCollapsed && (
             <div className="px-3 pb-2 text-[10px] font-extrabold uppercase tracking-widest text-blue-300/80">
               Navigation
@@ -130,6 +133,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 to={item.path}
                 onClick={() => setIsMobileMenuOpen(false)}
                 title={isCollapsed ? item.name : undefined}
+                aria-current={isActive ? 'page' : undefined}
                 className={`flex items-center px-3 py-2.5 rounded-xl text-xs font-bold transition-all relative group ${
                   isCollapsed ? 'justify-center' : ''
                 } ${
@@ -212,7 +216,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <div className={`flex items-center ${isCollapsed ? 'justify-center px-0' : 'px-1 py-1'}`}>
             <img 
               src={user.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.displayName || 'User')}&background=1e3a8a&color=ffffff`} 
-              alt="Profile" 
+              alt={user.displayName ? `${user.displayName}'s profile photo` : 'User profile photo'} 
               className="w-9 h-9 rounded-full border border-white/20 shadow-md object-cover flex-shrink-0"
               referrerPolicy="no-referrer"
             />
@@ -231,6 +235,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             type="button"
             onClick={logOut}
             title={isCollapsed ? "Sign Out" : undefined}
+            aria-label="Sign out of account"
             className={`w-full flex items-center justify-center py-2 bg-red-500/10 hover:bg-red-500/20 text-red-300 border border-red-500/20 rounded-xl text-xs font-bold transition-all shadow-sm ${
               isCollapsed ? 'px-0' : 'px-3'
             }`}

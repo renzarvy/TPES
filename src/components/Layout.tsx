@@ -65,10 +65,12 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   return (
     <div className="min-h-screen bg-slate-900 flex flex-col md:flex-row font-sans text-slate-800 antialiased selection:bg-blue-500/30 relative">
       {/* Background Image with Dark Overlay for enhanced readability */}
-      <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
+      <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden" aria-hidden="true">
         <img
           src="/school-bg.webp"
-          alt="St. Alexius College Campus"
+          alt=""
+          role="presentation"
+          aria-hidden="true"
           className="w-full h-full object-cover object-center filter blur-[1px] scale-105"
         />
         {/* Dark Aesthetic Overlay */}
@@ -80,17 +82,19 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
       <div className="md:hidden bg-gradient-to-r from-[#0f172a] via-[#1e3a8a] to-[#0f172a] text-white px-4 py-3 flex justify-between items-center shadow-lg z-40 sticky top-0 border-b border-blue-800/60">
         <div className="flex items-center space-x-3">
           <div className="w-9 h-9 bg-white rounded-full flex items-center justify-center overflow-hidden border border-white/20 shadow-md flex-shrink-0">
-            <img src="/logo.png" alt="St. Alexius Logo" className="w-full h-full object-cover" />
+            <img src="/logo.png" alt="St. Alexius College Logo" className="w-full h-full object-cover" />
           </div>
           <div>
-            <h1 className="text-xs font-extrabold tracking-wider text-amber-300">ST. ALEXIUS COLLEGE</h1>
+            <span className="text-xs font-extrabold tracking-wider text-amber-300 block">ST. ALEXIUS COLLEGE</span>
             <p className="text-[10px] text-blue-200 font-medium">Evaluation System</p>
           </div>
         </div>
         <button 
+          type="button"
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} 
           className="p-2 text-white hover:bg-white/10 rounded-lg transition-colors border border-white/10"
-          aria-label="Toggle Navigation Menu"
+          aria-label={isMobileMenuOpen ? "Close navigation menu" : "Open navigation menu"}
+          aria-expanded={isMobileMenuOpen}
         >
           {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
         </button>

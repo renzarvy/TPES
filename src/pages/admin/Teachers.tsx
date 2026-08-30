@@ -353,9 +353,10 @@ export const Teachers: React.FC = () => {
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
             {/* Search Input */}
             <div className="relative flex-1 sm:w-64">
-              <Search className="w-4 h-4 text-gray-400 absolute left-3 top-2.5" />
+              <Search className="w-4 h-4 text-gray-400 absolute left-3 top-2.5" aria-hidden="true" />
               <input
                 type="text"
+                aria-label="Search teacher, ID, email"
                 placeholder="Search teacher, ID, email..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -363,7 +364,9 @@ export const Teachers: React.FC = () => {
               />
               {searchTerm && (
                 <button
+                  type="button"
                   onClick={() => setSearchTerm('')}
+                  aria-label="Clear search query"
                   className="absolute right-2.5 top-2 text-gray-400 hover:text-gray-600"
                 >
                   <X className="w-3.5 h-3.5" />
@@ -373,10 +376,11 @@ export const Teachers: React.FC = () => {
 
             {/* College Filter Select */}
             <div className="relative sm:w-56">
-              <div className="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none text-gray-400">
+              <div className="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none text-gray-400" aria-hidden="true">
                 <Building2 className="w-3.5 h-3.5" />
               </div>
               <select
+                aria-label="Filter teachers by college or department"
                 value={selectedDepartment}
                 onChange={(e) => setSelectedDepartment(e.target.value)}
                 className="w-full pl-8 pr-8 py-1.5 text-xs border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1e3a8a] focus:border-[#1e3a8a] bg-white text-gray-700 font-medium truncate"
@@ -393,13 +397,14 @@ export const Teachers: React.FC = () => {
             {/* Reset Filters button if active */}
             {(searchTerm || selectedDepartment !== 'ALL') && (
               <button
+                type="button"
                 onClick={() => {
                   setSearchTerm('');
                   setSelectedDepartment('ALL');
                 }}
                 className="px-3 py-1.5 text-xs text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors font-medium flex items-center justify-center space-x-1"
               >
-                <X className="w-3.5 h-3.5" />
+                <X className="w-3.5 h-3.5" aria-hidden="true" />
                 <span>Clear</span>
               </button>
             )}
@@ -425,7 +430,7 @@ export const Teachers: React.FC = () => {
                         <img 
                           className="h-10 w-10 rounded-full object-cover bg-gray-100" 
                           src={teacher.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(teacher.name)}&background=random`} 
-                          alt="" 
+                          alt={teacher.name ? `${teacher.name}'s profile photo` : 'Faculty profile photo'} 
                           referrerPolicy="no-referrer"
                         />
                       </div>
@@ -526,21 +531,32 @@ export const Teachers: React.FC = () => {
       {isModalOpen && (
         <div className="fixed inset-0 z-50 overflow-y-auto">
           <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:p-0">
-            <div className="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75" onClick={handleCloseModal}></div>
-            <div className="relative inline-block align-bottom bg-white rounded-xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+            <div className="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75" onClick={handleCloseModal} aria-hidden="true"></div>
+            <div 
+              role="dialog" 
+              aria-modal="true" 
+              aria-labelledby="teacher-modal-title"
+              className="relative inline-block align-bottom bg-white rounded-xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full"
+            >
               <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
                 <div className="flex justify-between items-center mb-5">
-                  <h3 className="text-xl font-semibold text-gray-900">
+                  <h3 id="teacher-modal-title" className="text-xl font-semibold text-gray-900">
                     {editingTeacher ? 'Edit Teacher Details' : 'Add New Teacher'}
                   </h3>
-                  <button onClick={handleCloseModal} className="text-gray-400 hover:text-gray-500 transition-colors">
+                  <button 
+                    type="button"
+                    onClick={handleCloseModal} 
+                    aria-label="Close modal"
+                    className="text-gray-400 hover:text-gray-500 transition-colors"
+                  >
                     <X className="w-5 h-5" />
                   </button>
                 </div>
                 <form onSubmit={handleSaveTeacher} className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">School Email</label>
+                    <label htmlFor="teacher-email" className="block text-sm font-medium text-gray-700 mb-1">School Email</label>
                     <input 
+                      id="teacher-email"
                       type="email" 
                       required 
                       value={formData.email} 
@@ -552,8 +568,9 @@ export const Teachers: React.FC = () => {
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+                      <label htmlFor="teacher-fullname" className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
                       <input 
+                        id="teacher-fullname"
                         type="text" 
                         required 
                         value={formData.name} 
@@ -563,8 +580,9 @@ export const Teachers: React.FC = () => {
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Employee ID</label>
+                      <label htmlFor="teacher-emp-id" className="block text-sm font-medium text-gray-700 mb-1">Employee ID</label>
                       <input 
+                        id="teacher-emp-id"
                         type="text" 
                         required 
                         value={formData.employeeId} 
@@ -576,8 +594,9 @@ export const Teachers: React.FC = () => {
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Department</label>
+                      <label htmlFor="teacher-dept" className="block text-sm font-medium text-gray-700 mb-1">Department</label>
                       <select 
+                        id="teacher-dept"
                         required 
                         value={formData.department} 
                         onChange={e => setFormData({...formData, department: e.target.value})} 
@@ -590,8 +609,9 @@ export const Teachers: React.FC = () => {
                       </select>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Position / Title</label>
+                      <label htmlFor="teacher-position" className="block text-sm font-medium text-gray-700 mb-1">Position / Title</label>
                       <input 
+                        id="teacher-position"
                         type="text" 
                         required 
                         value={formData.position} 
@@ -603,8 +623,9 @@ export const Teachers: React.FC = () => {
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Major Subjects Taught</label>
+                      <label htmlFor="teacher-major-subj" className="block text-sm font-medium text-gray-700 mb-1">Major Subjects Taught</label>
                       <input 
+                        id="teacher-major-subj"
                         type="text" 
                         value={formData.majorSubjects} 
                         onChange={e => setFormData({...formData, majorSubjects: e.target.value})} 
@@ -613,8 +634,9 @@ export const Teachers: React.FC = () => {
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Minor / Other Subjects Taught</label>
+                      <label htmlFor="teacher-other-subj" className="block text-sm font-medium text-gray-700 mb-1">Minor / Other Subjects Taught</label>
                       <input 
+                        id="teacher-other-subj"
                         type="text" 
                         value={formData.otherSubjects} 
                         onChange={e => setFormData({...formData, otherSubjects: e.target.value})} 

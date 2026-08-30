@@ -772,7 +772,7 @@ export const StudentEvaluationCompletionTracker: React.FC = () => {
                     <div className="flex items-center space-x-3">
                       <img
                         src={student.photoUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(student.name)}&background=random`}
-                        alt=""
+                        alt={student.name ? `${student.name}'s profile photo` : 'Student profile photo'}
                         className="w-9 h-9 rounded-full object-cover border border-gray-200 flex-shrink-0"
                         referrerPolicy="no-referrer"
                       />

@@ -785,16 +785,22 @@ export const StudentVerificationManager: React.FC = () => {
               <div className="flex items-start space-x-3.5">
                 <div className="relative">
                   {student.idProofUrl ? (
-                    <div 
+                    <button
+                      type="button" 
                       onClick={() => setPreviewStudent(student)}
-                      className="w-12 h-12 rounded-xl overflow-hidden border-2 border-amber-400/80 shadow-xs cursor-pointer group relative bg-slate-900"
+                      className="w-12 h-12 rounded-xl overflow-hidden border-2 border-amber-400/80 shadow-xs cursor-pointer group relative bg-slate-900 block p-0"
                       title="Click to view ID proof"
+                      aria-label={`View ID proof for ${student.name || 'student'}`}
                     >
-                      <img src={student.idProofUrl} alt="ID Proof" className="w-full h-full object-cover group-hover:scale-110 transition-transform" />
-                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white">
+                      <img 
+                        src={student.idProofUrl} 
+                        alt={student.name ? `ID proof document for ${student.name}` : 'Student ID proof document'} 
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform" 
+                      />
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white" aria-hidden="true">
                         <ZoomIn className="w-4 h-4" />
                       </div>
-                    </div>
+                    </button>
                   ) : (
                     <div className={`w-12 h-12 rounded-xl border font-bold text-sm flex items-center justify-center flex-shrink-0 ${
                       isTeacher 
@@ -936,18 +942,20 @@ export const StudentVerificationManager: React.FC = () => {
 
       {/* ID Proof Lightbox Preview Modal */}
       {previewStudent && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto animate-fade-in">
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto animate-fade-in" role="dialog" aria-modal="true" aria-labelledby="id-proof-modal-title">
           <div className="bg-white rounded-2xl max-w-2xl w-full p-6 space-y-4 shadow-2xl relative border border-gray-200">
             <button
+              type="button"
               onClick={() => setPreviewStudent(null)}
+              aria-label="Close ID proof preview dialog"
               className="absolute top-4 right-4 p-2 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-full transition-colors"
             >
               <X className="w-5 h-5" />
             </button>
 
             <div className="border-b border-gray-100 pb-3">
-              <h3 className="text-base font-extrabold text-gray-900 flex items-center">
-                <IdCard className="w-5 h-5 text-[#1e3a8a] mr-2" />
+              <h3 id="id-proof-modal-title" className="text-base font-extrabold text-gray-900 flex items-center">
+                <IdCard className="w-5 h-5 text-[#1e3a8a] mr-2" aria-hidden="true" />
                 Student Identification Proof Document
               </h3>
               <p className="text-xs text-gray-500">
@@ -959,7 +967,7 @@ export const StudentVerificationManager: React.FC = () => {
             <div className="bg-slate-900 rounded-xl overflow-hidden max-h-[420px] flex items-center justify-center p-2 border border-slate-700 relative">
               <img 
                 src={previewStudent.idProofUrl} 
-                alt="Student Official ID Proof" 
+                alt={previewStudent.name ? `Official student ID card uploaded by ${previewStudent.name}` : 'Student official ID proof document'} 
                 className="max-h-[400px] w-auto object-contain rounded"
               />
             </div>

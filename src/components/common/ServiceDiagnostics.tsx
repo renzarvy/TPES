@@ -53,6 +53,18 @@ export const ServiceDiagnosticsModal: React.FC<ServiceDiagnosticsProps> = ({
     setInternalOpen(false);
   };
 
+  // Close on Escape key
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        handleClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen]);
+
   const runDiagnostics = async () => {
     setIsRunning(true);
     const results: ServiceStatus[] = [];
@@ -248,6 +260,9 @@ export const ServiceDiagnosticsModal: React.FC<ServiceDiagnosticsProps> = ({
 
             {/* Modal Container */}
             <motion.div
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="diagnostics-modal-title"
               initial={{ opacity: 0, scale: 0.95, y: 15 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 15 }}
@@ -258,10 +273,10 @@ export const ServiceDiagnosticsModal: React.FC<ServiceDiagnosticsProps> = ({
               <div className="p-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50/50 dark:bg-slate-900/50">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-950/70 border border-blue-200 dark:border-blue-800 flex items-center justify-center text-blue-600 dark:text-blue-400">
-                    <Activity className="w-5 h-5" />
+                    <Activity className="w-5 h-5" aria-hidden="true" />
                   </div>
                   <div>
-                    <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                    <h3 id="diagnostics-modal-title" className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
                       Database & Auth Diagnostics
                     </h3>
                     <p className="text-xs text-slate-500 dark:text-slate-400">
@@ -270,7 +285,9 @@ export const ServiceDiagnosticsModal: React.FC<ServiceDiagnosticsProps> = ({
                   </div>
                 </div>
                 <button
+                  type="button"
                   onClick={handleClose}
+                  aria-label="Close diagnostics dialog"
                   className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
                 >
                   <X className="w-5 h-5" />

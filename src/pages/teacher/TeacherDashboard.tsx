@@ -605,15 +605,17 @@ export const TeacherDashboard: React.FC = () => {
 
       {/* Teacher Email Modal Preview */}
       {selectedNotifModal && (
-        <div className="fixed inset-0 z-50 bg-black bg-opacity-60 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 bg-black bg-opacity-60 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="teacher-email-preview-title">
           <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden animate-scale-in">
             <div className="p-4 bg-[#1e3a8a] text-white flex items-center justify-between border-b border-blue-900">
               <div className="flex items-center space-x-2">
-                <Mail className="w-5 h-5 text-amber-400" />
-                <h3 className="font-bold text-sm text-white">Dispatched Email Notification Preview</h3>
+                <Mail className="w-5 h-5 text-amber-400" aria-hidden="true" />
+                <h3 id="teacher-email-preview-title" className="font-bold text-sm text-white">Dispatched Email Notification Preview</h3>
               </div>
               <button 
+                type="button"
                 onClick={() => setSelectedNotifModal(null)}
+                aria-label="Close email preview dialog"
                 className="p-1 hover:bg-blue-800 rounded-lg text-white"
               >
                 <X className="w-5 h-5" />

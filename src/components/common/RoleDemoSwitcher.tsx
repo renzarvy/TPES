@@ -171,23 +171,26 @@ export const RoleDemoSwitcher: React.FC<{ compact?: boolean; className?: string 
           type="button"
           onClick={() => setIsOpen(!isOpen)}
           disabled={switching}
+          aria-label={`Demo Role Switcher, current role: ${currentRole.title}`}
+          aria-expanded={isOpen}
+          aria-haspopup="menu"
           className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold bg-amber-500/10 hover:bg-amber-500/20 text-amber-800 dark:text-amber-300 border border-amber-500/30 transition cursor-pointer"
           title="Switch Demo Role"
         >
-          <Sparkles className="w-3.5 h-3.5 text-amber-500 animate-pulse" />
+          <Sparkles className="w-3.5 h-3.5 text-amber-500 animate-pulse" aria-hidden="true" />
           <span className="hidden sm:inline">Demo:</span>
           <span className="font-extrabold truncate max-w-[90px]">{currentRole.title}</span>
-          <ChevronDown className="w-3 h-3 opacity-70" />
+          <ChevronDown className="w-3 h-3 opacity-70" aria-hidden="true" />
         </button>
 
         {isOpen && (
           <>
-            <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
-            <div className="absolute right-0 mt-2 w-72 bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl z-50 p-2 text-slate-100 divide-y divide-slate-800">
+            <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} aria-hidden="true" />
+            <div role="menu" aria-label="Demo roles" className="absolute right-0 mt-2 w-72 bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl z-50 p-2 text-slate-100 divide-y divide-slate-800">
               <div className="px-3 py-2">
                 <div className="flex items-center justify-between">
                   <span className="text-[11px] font-bold uppercase tracking-wider text-amber-400 flex items-center gap-1">
-                    <Zap className="w-3.5 h-3.5 text-amber-400" />
+                    <Zap className="w-3.5 h-3.5 text-amber-400" aria-hidden="true" />
                     Role Dashboard Simulator
                   </span>
                   <span className="text-[9px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 font-mono">
@@ -199,7 +202,7 @@ export const RoleDemoSwitcher: React.FC<{ compact?: boolean; className?: string 
                 </p>
               </div>
 
-              <div className="py-1 space-y-1">
+              <div className="py-1 space-y-1" role="none">
                 {DEMO_ROLES.map((r) => {
                   const Icon = r.icon;
                   const isSelected = r.email.toLowerCase() === currentUserEmail || (r.role === role && r.id !== 'dean');
@@ -208,6 +211,8 @@ export const RoleDemoSwitcher: React.FC<{ compact?: boolean; className?: string 
                     <button
                       key={r.id}
                       type="button"
+                      role="menuitem"
+                      aria-label={`Switch to ${r.title} role (${r.name})`}
                       onClick={() => handleSwitchRole(r)}
                       className={`w-full text-left px-2.5 py-2 rounded-xl text-xs flex items-start gap-2.5 transition cursor-pointer ${
                         isSelected 
@@ -216,12 +221,12 @@ export const RoleDemoSwitcher: React.FC<{ compact?: boolean; className?: string 
                       }`}
                     >
                       <div className={`p-1.5 rounded-lg shrink-0 mt-0.5 ${r.badgeColor}`}>
-                        <Icon className="w-3.5 h-3.5" />
+                        <Icon className="w-3.5 h-3.5" aria-hidden="true" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between">
                           <span className="font-bold text-xs truncate">{r.title}</span>
-                          {isSelected && <Check className="w-3.5 h-3.5 text-blue-400 shrink-0" />}
+                          {isSelected && <Check className="w-3.5 h-3.5 text-blue-400 shrink-0" aria-hidden="true" />}
                         </div>
                         <p className="text-[10px] text-slate-400 truncate">{r.name}</p>
                         <p className="text-[9px] text-slate-500 truncate">{r.department}</p>

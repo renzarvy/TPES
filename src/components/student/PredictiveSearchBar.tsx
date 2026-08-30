@@ -151,10 +151,11 @@ export const PredictiveSearchBar: React.FC<PredictiveSearchBarProps> = ({
     <div id={id} ref={containerRef} className="relative w-full">
       {/* Search Input Container */}
       <div className="relative flex items-center">
-        <Search className="w-4 h-4 text-blue-800 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+        <Search className="w-4 h-4 text-blue-800 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" aria-hidden="true" />
         <input
           ref={inputRef}
           type="text"
+          aria-label="Search faculty name, subject, or department"
           placeholder={placeholder}
           value={searchQuery}
           onChange={(e) => {
@@ -174,6 +175,7 @@ export const PredictiveSearchBar: React.FC<PredictiveSearchBarProps> = ({
                 onSearchChange('');
                 inputRef.current?.focus();
               }}
+              aria-label="Clear search input"
               className="p-1 rounded-full text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
               title="Clear search"
             >
@@ -182,7 +184,7 @@ export const PredictiveSearchBar: React.FC<PredictiveSearchBarProps> = ({
           )}
 
           <div className="hidden sm:flex items-center px-2 py-0.5 rounded-md bg-blue-50 text-blue-900 border border-blue-200 text-[10px] font-extrabold">
-            <Sparkles className="w-3 h-3 mr-1 text-amber-500" />
+            <Sparkles className="w-3 h-3 mr-1 text-amber-500" aria-hidden="true" />
             {searchQuery ? `${suggestions.totalMatches} Found` : 'Live Filter'}
           </div>
         </div>
