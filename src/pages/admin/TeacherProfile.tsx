@@ -109,15 +109,37 @@ export const TeacherProfile: React.FC = () => {
     };
   });
 
+  const handleGoBack = () => {
+    // Check if there is valid history in the current session
+    if (window.history.state && window.history.state.idx > 0) {
+      navigate(-1);
+    } else {
+      navigate('/teachers');
+    }
+  };
+
   return (
-    <div className="space-y-6">
-      <button 
-        onClick={() => navigate(-1)}
-        className="flex items-center text-sm font-semibold text-gray-500 hover:text-[#1e3a8a] transition-colors"
-      >
-        <ArrowLeft className="w-4 h-4 mr-2" />
-        Back to Directory
-      </button>
+    <div className="space-y-6 animate-fade-in">
+      {/* Top Header Navigation Bar with Intelligent Back Button */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 rounded-xl border border-gray-100 shadow-xs">
+        <button 
+          type="button"
+          onClick={handleGoBack}
+          aria-label="Return to Teachers Directory with scroll position preserved"
+          className="inline-flex items-center text-xs sm:text-sm font-bold text-slate-700 hover:text-[#1e3a8a] bg-slate-50 hover:bg-blue-50 px-3.5 py-2 rounded-lg border border-slate-200 transition-colors shadow-2xs group cursor-pointer"
+        >
+          <ArrowLeft className="w-4 h-4 mr-2 text-slate-500 group-hover:text-[#1e3a8a] group-hover:-translate-x-0.5 transition-transform" />
+          <span>Back to Teachers Directory</span>
+        </button>
+
+        <div className="flex items-center space-x-2 text-xs text-slate-500">
+          <span className="font-semibold text-slate-900">{teacher.name}</span>
+          <span>&bull;</span>
+          <span className="bg-blue-50 text-[#1e3a8a] font-bold px-2.5 py-0.5 rounded-full border border-blue-100">
+            {teacher.department}
+          </span>
+        </div>
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Profile Card */}

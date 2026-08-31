@@ -528,8 +528,8 @@ export const EvaluationForm: React.FC = () => {
                 <p className="text-xs text-gray-500 mt-1">{criterion.description}</p>
               </div>
 
-              {/* 1-5 Rating Selection */}
-              <div className="flex items-center space-x-2 sm:space-x-4 overflow-x-auto pb-2 pt-1">
+              {/* 1-5 Rating Selection - Responsive 5-column grid for mobile */}
+              <div className="grid grid-cols-5 gap-1.5 sm:gap-3 pt-1 pb-1">
                 {[1, 2, 3, 4, 5].map((value) => {
                   const isSelected = ratings[criterion.id] === value;
                   const labelsMap: Record<number, string> = {
@@ -543,10 +543,10 @@ export const EvaluationForm: React.FC = () => {
                   return (
                     <label 
                       key={value} 
-                      className={`flex flex-col items-center cursor-pointer min-w-[60px] sm:min-w-[75px] p-2.5 rounded-xl border transition-all ${
+                      className={`flex flex-col items-center justify-center cursor-pointer py-2 sm:py-2.5 px-1 sm:px-2 rounded-xl border transition-all select-none text-center ${
                         isSelected 
-                          ? 'border-[#1e3a8a] bg-blue-50/80 shadow-md ring-2 ring-[#1e3a8a]/20' 
-                          : 'border-gray-200 hover:bg-gray-50'
+                          ? 'border-[#1e3a8a] bg-blue-50/90 shadow-sm ring-2 ring-[#1e3a8a]/30' 
+                          : 'border-slate-200 bg-slate-50/50 hover:bg-slate-100/80 hover:border-slate-300'
                       }`}
                     >
                       <input
@@ -557,10 +557,10 @@ export const EvaluationForm: React.FC = () => {
                         onChange={() => handleRatingChange(criterion.id, value)}
                         className="sr-only"
                       />
-                      <span className={`text-lg font-black ${isSelected ? 'text-[#1e3a8a]' : 'text-gray-700'}`}>
+                      <span className={`text-base sm:text-lg font-black leading-tight ${isSelected ? 'text-[#1e3a8a]' : 'text-slate-700'}`}>
                         {value}
                       </span>
-                      <span className={`text-[10px] font-bold mt-0.5 ${isSelected ? 'text-[#1e3a8a]' : 'text-gray-500'}`}>
+                      <span className={`text-[9px] sm:text-[10px] font-semibold mt-0.5 tracking-tight truncate max-w-full block ${isSelected ? 'text-[#1e3a8a]' : 'text-slate-500'}`}>
                         {labelsMap[value]}
                       </span>
                     </label>

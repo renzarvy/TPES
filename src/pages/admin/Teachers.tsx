@@ -44,8 +44,38 @@ export const Teachers: React.FC = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [departments, setDepartments] = useState<string[]>(() => getStoredDepartments());
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedDepartment, setSelectedDepartment] = useState('ALL');
+  const [searchTerm, setSearchTerm] = useState(() => sessionStorage.getItem('sac_teachers_search') || '');
+  const [selectedDepartment, setSelectedDepartment] = useState(() => sessionStorage.getItem('sac_teachers_dept') || 'ALL');
+
+  // Update session storage filters
+  useEffect(() => {
+    sessionStorage.setItem('sac_teachers_search', searchTerm);
+  }, [searchTerm]);
+
+  useEffect(() => {
+    sessionStorage.setItem('sac_teachers_dept', selectedDepartment);
+  }, [selectedDepartment]);
+
+  // Restore scroll position after data loads
+  useEffect(() => {
+    if (!loading) {
+      const savedScroll = sessionStorage.getItem('sac_teachers_scroll_y');
+      if (savedScroll) {
+        // Small delay to allow DOM render
+        requestAnimationFrame(() => {
+          window.scrollTo({
+            top: parseInt(savedScroll, 10) || 0,
+            behavior: 'instant' as ScrollBehavior
+          });
+        });
+      }
+    }
+  }, [loading]);
+
+  const handleNavigateToProfile = (teacherId: string) => {
+    sessionStorage.setItem('sac_teachers_scroll_y', String(window.scrollY));
+    navigate(`/teacher/${teacherId}`);
+  };
 
   useEffect(() => {
     if (!user) return;
@@ -436,8 +466,8 @@ export const Teachers: React.FC = () => {
                       </div>
                       <div className="ml-4">
                         <button 
-                          onClick={() => navigate(`/teacher/${teacher.id}`)}
-                          className="text-sm font-medium text-[#1e3a8a] hover:underline text-left"
+                          onClick={() => handleNavigateToProfile(teacher.id)}
+                          className="text-sm font-medium text-[#1e3a8a] hover:underline text-left cursor-pointer"
                         >
                           {teacher.name}
                         </button>

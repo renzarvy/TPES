@@ -106,12 +106,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Load session from localStorage on initial render
   useEffect(() => {
+    let isMounted = true;
     const initializeAuth = async () => {
       try {
-        await initTursoSchema();
-        ensureMasterDemoDataSeeded();
+        // Run database and schema setup with safety timeout
+        const initPromise = Promise.allSettled([
+          initTursoSchema(),
+          Promise.resolve(ensureMasterDemoDataSeeded())
+        ]);
+        
+        // Timeout guarantee so loading never hangs
+        const timeoutPromise = new Promise(resolve => setTimeout(resolve, 800));
+        await Promise.race([initPromise, timeoutPromise]);
+
         const saved = loadSavedSession();
-        if (saved && saved.user && saved.profile) {
+        if (saved && saved.user && saved.profile && isMounted) {
           const normalizedEmail = (saved.user.email || '').toLowerCase().trim();
           const isSuperAdmin = SUPER_ADMIN_EMAILS.includes(normalizedEmail);
           const effectiveRole = isSuperAdmin ? 'admin' : (saved.profile.role || 'student');
@@ -129,11 +138,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       } catch (err) {
         console.warn('[Turso Auth] Session load warning:', err);
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     };
 
     initializeAuth();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const clearAuthError = () => {
@@ -538,7 +553,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       clearAuthError, 
       updateUserProfile
     }}>
-      {!loading && children}
+      {children}
     </AuthContext.Provider>
   );
 };
